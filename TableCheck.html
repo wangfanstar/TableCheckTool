@@ -1,0 +1,2207 @@
+<!DOCTYPE html>  
+<html lang="zh-CN">  
+<head>  
+  <meta charset="UTF-8" />  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />  
+  <title>表格内容确认工具 v3</title>  
+  <link rel="stylesheet" href="tailwind.css" />  
+  <script src="alpine.min.js" defer></script>  
+  <style>  
+    [x-cloak] { display: none !important; }  
+    body {  
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);  
+      min-height: 100vh;  
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;  
+      color: #e2e8f0;  
+    }  
+    ::-webkit-scrollbar { width: 6px; height: 6px; }  
+    ::-webkit-scrollbar-track { background: #1e293b; }  
+    ::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }  
+    ::-webkit-scrollbar-thumb:hover { background: #64748b; }  
+
+    .glass-card {  
+      background: rgba(30,41,59,0.85);  
+      backdrop-filter: blur(16px);  
+      border: 1px solid rgba(99,102,241,0.2);  
+      box-shadow: 0 8px 32px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.05);  
+    }  
+    .neon-title {  
+      background: linear-gradient(90deg, #818cf8, #38bdf8, #34d399);  
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent;  
+      background-clip: text; filter: drop-shadow(0 0 20px rgba(129,140,248,0.4));  
+    }  
+    .input-area {  
+      background: rgba(15,23,42,0.8); border: 1px solid rgba(99,102,241,0.3);  
+      color: #e2e8f0; transition: all 0.3s; resize: vertical;  
+    }  
+    .input-area:focus { outline:none; border-color:#818cf8; box-shadow:0 0 0 3px rgba(129,140,248,0.15); }  
+    .input-area-amber { background:rgba(15,23,42,0.8); border:1px solid rgba(245,158,11,0.3); color:#e2e8f0; transition:all .3s; resize:vertical; }  
+    .input-area-amber:focus { outline:none; border-color:#f59e0b; box-shadow:0 0 0 3px rgba(245,158,11,0.15); }  
+    .input-area-cyan { background:rgba(15,23,42,0.8); border:1px solid rgba(6,182,212,0.3); color:#e2e8f0; transition:all .3s; resize:vertical; }  
+    .input-area-cyan:focus { outline:none; border-color:#06b6d4; box-shadow:0 0 0 3px rgba(6,182,212,0.15); }  
+    .input-area::placeholder,.input-area-amber::placeholder,.input-area-cyan::placeholder { color:#94a3b8; opacity:1; }  
+    .input-area,.input-area-amber,.input-area-cyan { color:#e2e8f0; }  
+    select.input-area, select.input-area-amber, select.input-area-cyan { color:#e2e8f0; }  
+    select.input-area option, select.input-area-amber option, select.input-area-cyan option { background:#1e293b; color:#e2e8f0; }  
+
+    .drop-zone { border:2px dashed rgba(99,102,241,0.4); background:rgba(15,23,42,0.5); border-radius:12px; transition:all .3s; cursor:pointer; position:relative; }  
+    .drop-zone:hover,.drop-zone.drag-over { border-color:#818cf8; background:rgba(99,102,241,0.08); box-shadow:0 0 24px rgba(129,140,248,0.2); }  
+    .drop-zone-amber { border:2px dashed rgba(245,158,11,0.4); background:rgba(15,23,42,0.5); border-radius:12px; transition:all .3s; cursor:pointer; position:relative; }  
+    .drop-zone-amber:hover,.drop-zone-amber.drag-over { border-color:#f59e0b; background:rgba(245,158,11,0.07); }  
+    .drop-zone-cyan { border:2px dashed rgba(6,182,212,0.4); background:rgba(15,23,42,0.5); border-radius:12px; transition:all .3s; cursor:pointer; position:relative; }  
+    .drop-zone-cyan:hover,.drop-zone-cyan.drag-over { border-color:#06b6d4; background:rgba(6,182,212,0.07); }  
+    .file-input-hidden { position:absolute; inset:0; opacity:0; cursor:pointer; width:100%; height:100%; }  
+
+    .btn-primary { background:linear-gradient(135deg,#6366f1,#4f46e5); border:1px solid rgba(129,140,248,0.4); transition:all .3s; box-shadow:0 4px 15px rgba(99,102,241,0.3); }  
+    .btn-primary:hover { background:linear-gradient(135deg,#818cf8,#6366f1); box-shadow:0 6px 25px rgba(99,102,241,0.5); transform:translateY(-1px); }  
+    .btn-success { background:linear-gradient(135deg,#059669,#047857); border:1px solid rgba(52,211,153,0.4); transition:all .3s; box-shadow:0 4px 15px rgba(5,150,105,0.3); }  
+    .btn-success:hover { background:linear-gradient(135deg,#10b981,#059669); box-shadow:0 6px 25px rgba(5,150,105,0.5); transform:translateY(-1px); }  
+    .btn-warning { background:linear-gradient(135deg,#d97706,#b45309); border:1px solid rgba(251,191,36,0.4); transition:all .3s; box-shadow:0 4px 15px rgba(217,119,6,0.3); }  
+    .btn-warning:hover { background:linear-gradient(135deg,#f59e0b,#d97706); box-shadow:0 6px 25px rgba(217,119,6,0.5); transform:translateY(-1px); }  
+    .btn-danger { background:linear-gradient(135deg,#dc2626,#b91c1c); border:1px solid rgba(248,113,113,0.4); transition:all .3s; box-shadow:0 4px 15px rgba(220,38,38,0.3); }  
+    .btn-danger:hover { background:linear-gradient(135deg,#ef4444,#dc2626); box-shadow:0 6px 25px rgba(220,38,38,0.5); transform:translateY(-1px); }  
+    .btn-cyan { background:linear-gradient(135deg,#0891b2,#0e7490); border:1px solid rgba(34,211,238,0.4); transition:all .3s; box-shadow:0 4px 15px rgba(8,145,178,0.3); }  
+    .btn-cyan:hover { background:linear-gradient(135deg,#06b6d4,#0891b2); box-shadow:0 6px 25px rgba(8,145,178,0.5); transform:translateY(-1px); }  
+    .btn-amber { background:linear-gradient(135deg,#d97706,#92400e); border:1px solid rgba(251,191,36,0.4); transition:all .3s; box-shadow:0 4px 15px rgba(217,119,6,0.3); }  
+    .btn-amber:hover { background:linear-gradient(135deg,#f59e0b,#d97706); box-shadow:0 6px 25px rgba(217,119,6,0.5); transform:translateY(-1px); }  
+    .btn-rose { background:linear-gradient(135deg,#e11d48,#be123c); border:1px solid rgba(251,113,133,0.4); transition:all .3s; box-shadow:0 4px 15px rgba(225,29,72,0.3); }  
+    .btn-rose:hover { background:linear-gradient(135deg,#f43f5e,#e11d48); box-shadow:0 6px 25px rgba(225,29,72,0.5); transform:translateY(-1px); }  
+    .btn-purple { background:linear-gradient(135deg,#7c3aed,#6d28d9); border:1px solid rgba(167,139,250,0.4); transition:all .3s; box-shadow:0 4px 15px rgba(124,58,237,0.3); }  
+    .btn-purple:hover { background:linear-gradient(135deg,#8b5cf6,#7c3aed); box-shadow:0 6px 25px rgba(124,58,237,0.5); transform:translateY(-1px); }  
+    .btn-sm { padding:4px 12px; font-size:12px; border-radius:6px; font-weight:600; color:white; cursor:pointer; border:none; transition:all .2s; }  
+    button:disabled { opacity:0.6; cursor:not-allowed; }  
+
+    .tab-btn { padding:8px 18px; border-radius:8px; font-size:13px; font-weight:700; transition:all .25s; cursor:pointer; border:none; }  
+    .tab-active-indigo { background:linear-gradient(135deg,#6366f1,#4f46e5); color:white; box-shadow:0 4px 15px rgba(99,102,241,0.35); }  
+    .tab-active-amber { background:linear-gradient(135deg,#d97706,#92400e); color:white; box-shadow:0 4px 15px rgba(217,119,6,0.35); }  
+    .tab-active-cyan { background:linear-gradient(135deg,#0891b2,#0e7490); color:white; box-shadow:0 4px 15px rgba(8,145,178,0.35); }  
+    .tab-inactive { background:rgba(15,23,42,0.6); color:#94a3b8; border:1px solid rgba(99,102,241,0.2); }  
+    .tab-inactive:hover { color:#a5b4fc; border-color:rgba(129,140,248,0.4); }  
+
+    /* ── 表格 ── */  
+    .table-container { overflow-x:auto; overflow-y:auto; max-height:580px; border-radius:12px; border:1px solid rgba(99,102,241,0.2); }  
+    table { border-collapse:separate; border-spacing:0; width:100%; min-width:900px; }  
+    thead { position:sticky; top:0; z-index:20; }  
+    thead th {  
+      background:linear-gradient(180deg,#1e1b4b,#1a1a3e); color:#a5b4fc;  
+      font-size:12px; font-weight:700; padding:10px 12px; text-align:left;  
+      white-space:nowrap; border-bottom:2px solid rgba(129,140,248,0.4);  
+      letter-spacing:.05em; text-transform:uppercase;  
+    }  
+    .th-inner { display:flex; align-items:center; gap:6px; }  
+    .th-del-btn {  
+      opacity:0; width:16px; height:16px; border-radius:4px;  
+      background:rgba(220,38,38,0.7); color:white; font-size:10px; font-weight:800;  
+      display:flex; align-items:center; justify-content:center;  
+      cursor:pointer; border:none; transition:all .2s; flex-shrink:0; line-height:1;  
+    }  
+    thead th:hover .th-del-btn { opacity:1; }  
+    .th-del-btn:hover { background:#ef4444; transform:scale(1.15); }  
+    .th-edit-input {  
+      background:rgba(15,23,42,0.9); border:1px solid #818cf8; color:#e2e8f0;  
+      border-radius:5px; padding:2px 6px; font-size:11px; font-weight:700;  
+      width:100px; outline:none; letter-spacing:.02em;  
+    }  
+
+    tbody tr { transition:background .2s; }  
+    tbody td {  
+      padding:8px 12px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.05);  
+      color:#cbd5e1; vertical-align:middle; background:rgba(15,23,42,0.5);  
+      transition:background .2s; position:relative;  
+    }  
+    tbody tr:nth-child(even) td { background:rgba(30,41,59,0.5); }  
+    tbody tr:hover td { background:rgba(99,102,241,0.08) !important; }  
+    .row-confirmed td { background:rgba(5,150,105,0.12) !important; border-left:3px solid #059669; }  
+    .row-confirmed:hover td { background:rgba(5,150,105,0.18) !important; }  
+    .row-appended td { border-left:3px solid #f59e0b !important; }  
+    @keyframes rowFlash { 0%{background:rgba(245,158,11,0.35)!important;} 100%{background:transparent;} }  
+    .row-new-flash td { animation:rowFlash 2s ease-out; }  
+
+    .cell-view { display:flex; align-items:flex-start; gap:4px; min-height:20px; cursor:text; }  
+    .cell-text { flex:1; word-break:break-all; line-height:1.5; }  
+    .cell-edit-icon { opacity:0; font-size:10px; color:#94a3b8; transition:opacity .15s; flex-shrink:0; margin-top:2px; cursor:pointer; }  
+    tbody td:hover .cell-edit-icon { opacity:1; }  
+    .cell-input {  
+      background:rgba(15,23,42,0.95); border:1px solid #818cf8;  
+      box-shadow:0 0 0 2px rgba(129,140,248,0.2),0 4px 12px rgba(0,0,0,0.4);  
+      color:#e2e8f0; border-radius:6px; padding:5px 8px; font-size:12px;  
+      width:100%; min-width:120px; outline:none; resize:none;  
+      line-height:1.5; font-family:inherit; transition:box-shadow .2s; display:block;  
+    }  
+    .cell-input:focus { box-shadow:0 0 0 3px rgba(129,140,248,0.3),0 4px 16px rgba(0,0,0,0.5); }  
+    .cell-edit-hint { font-size:10px; color:#94a3b8; margin-top:3px; display:flex; gap:8px; }  
+    .cell-edit-hint kbd { background:rgba(99,102,241,0.2); border:1px solid rgba(129,140,248,0.3); border-radius:3px; padding:0 4px; font-size:9px; color:#818cf8; }  
+
+    .badge-confirmed { background:linear-gradient(135deg,#059669,#047857); color:white; font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; box-shadow:0 2px 8px rgba(5,150,105,0.4); white-space:nowrap; }  
+    .badge-pending { background:rgba(71,85,105,0.6); color:#94a3b8; font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; white-space:nowrap; }  
+    .badge-new { background:linear-gradient(135deg,#d97706,#92400e); color:white; font-size:10px; padding:2px 7px; border-radius:12px; font-weight:700; vertical-align:middle; }  
+    .badge-custom { background:linear-gradient(135deg,#4f46e5,#4338ca); color:white; font-size:9px; padding:1px 5px; border-radius:8px; font-weight:700; vertical-align:middle; margin-left:3px; }  
+    .badge-schema { font-size:10px; padding:2px 8px; border-radius:10px; font-weight:700; display:inline-flex; align-items:center; gap:3px; }  
+
+    .progress-bar-bg { background:rgba(15,23,42,0.6); border-radius:999px; height:8px; overflow:hidden; }  
+    .progress-bar-fill { height:100%; border-radius:999px; background:linear-gradient(90deg,#059669,#34d399); transition:width .5s; box-shadow:0 0 10px rgba(52,211,153,0.4); }  
+
+    .inline-input { background:rgba(15,23,42,0.7); border:1px solid rgba(99,102,241,0.3); color:#e2e8f0; border-radius:6px; padding:4px 8px; font-size:12px; width:100%; min-width:80px; transition:all .2s; }  
+    .inline-input:focus { outline:none; border-color:#818cf8; box-shadow:0 0 0 2px rgba(129,140,248,0.2); }  
+
+    .edit-mode-bar { background:linear-gradient(90deg,rgba(99,102,241,0.15),rgba(6,182,212,0.1)); border:1px solid rgba(129,140,248,0.35); border-radius:10px; padding:8px 16px; font-size:12px; color:#a5b4fc; display:flex; align-items:center; gap:10px; }  
+    .edit-mode-dot { width:8px; height:8px; border-radius:50%; background:#818cf8; animation:pulse 1.5s infinite; }  
+    @keyframes pulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.5;transform:scale(1.3);} }  
+
+    .toast { position:fixed; bottom:30px; right:30px; z-index:9999; padding:13px 22px; border-radius:12px; font-weight:600; font-size:14px; box-shadow:0 8px 30px rgba(0,0,0,0.5); pointer-events:none; animation:toastIn .35s ease,toastOut .4s ease 2.6s forwards; }  
+    .toast-success { background:linear-gradient(135deg,#059669,#047857); color:white; }  
+    .toast-info { background:linear-gradient(135deg,#6366f1,#4f46e5); color:white; }  
+    .toast-warning { background:linear-gradient(135deg,#d97706,#b45309); color:white; }  
+    .toast-error { background:linear-gradient(135deg,#dc2626,#b91c1c); color:white; }  
+    @keyframes toastIn { from{opacity:0;transform:translateY(18px);} to{opacity:1;transform:translateY(0);} }  
+    @keyframes toastOut { from{opacity:1;} to{opacity:0;} }  
+
+    .section-label { color:#94a3b8; font-size:11px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; margin-bottom:6px; display:block; }  
+    .search-input { background:rgba(15,23,42,0.7); border:1px solid rgba(99,102,241,0.3); color:#e2e8f0; border-radius:8px; padding:8px 14px 8px 36px; font-size:13px; transition:all .3s; }  
+    .search-input:focus { outline:none; border-color:#818cf8; box-shadow:0 0 0 3px rgba(129,140,248,0.15); }  
+    .search-input::placeholder { color:#94a3b8; }  
+
+    .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; }  
+    .modal-box { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid rgba(129,140,248,0.3); border-radius:16px; padding:28px 32px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.6); max-height:90vh; overflow-y:auto; }  
+
+    .stat-card { background:rgba(15,23,42,0.6); border:1px solid rgba(99,102,241,0.2); border-radius:10px; padding:12px 18px; }  
+    .info-bar { background:rgba(99,102,241,0.08); border:1px solid rgba(99,102,241,0.2); border-radius:8px; padding:10px 14px; font-size:12px; color:#94a3b8; }  
+    .info-bar-amber { background:rgba(245,158,11,0.08); border:1px solid rgba(245,158,11,0.25); border-radius:8px; padding:10px 14px; font-size:12px; color:#fbbf24; }  
+    .info-bar-cyan { background:rgba(6,182,212,0.08); border:1px solid rgba(6,182,212,0.25); border-radius:8px; padding:10px 14px; font-size:12px; color:#38bdf8; }  
+    .info-bar-rose { background:rgba(225,29,72,0.08); border:1px solid rgba(225,29,72,0.25); border-radius:8px; padding:10px 14px; font-size:12px; color:#fb7185; }  
+    .file-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(99,102,241,0.15); border:1px solid rgba(129,140,248,0.3); border-radius:8px; padding:5px 12px; font-size:12px; color:#a5b4fc; }  
+    .file-badge-amber { background:rgba(245,158,11,0.12); border-color:rgba(245,158,11,0.3); color:#fbbf24; }  
+    .file-badge-cyan { background:rgba(6,182,212,0.12); border-color:rgba(6,182,212,0.3); color:#38bdf8; }  
+    .preview-box { background:rgba(15,23,42,0.8); border:1px solid rgba(99,102,241,0.2); border-radius:8px; padding:10px 14px; font-size:11px; font-family:monospace; color:#94a3b8; max-height:110px; overflow-y:auto; white-space:pre-wrap; word-break:break-all; }  
+    .toggle-track { width:44px; height:24px; border-radius:999px; transition:background .3s; position:relative; cursor:pointer; flex-shrink:0; }  
+    .toggle-thumb { position:absolute; top:3px; left:3px; width:18px; height:18px; border-radius:50%; background:white; box-shadow:0 1px 4px rgba(0,0,0,0.4); transition:transform .3s; }  
+    .del-col-preview { background:rgba(220,38,38,0.08); border:1px solid rgba(248,113,113,0.25); border-radius:8px; padding:10px 14px; font-size:12px; color:#fca5a5; }  
+    .section-title { display:flex; align-items:center; gap:8px; margin-bottom:16px; }  
+    .section-title .bar { width:3px; height:20px; border-radius:2px; }  
+    .history-item { background:rgba(15,23,42,0.6); border:1px solid rgba(99,102,241,0.15); border-radius:8px; padding:8px 12px; font-size:12px; color:#94a3b8; display:flex; align-items:center; gap:8px; }  
+    .history-dot { width:6px; height:6px; border-radius:50%; flex-shrink:0; }  
+
+    .ctx-menu { position:fixed; z-index:500; background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid rgba(129,140,248,0.3); border-radius:10px; padding:6px 0; box-shadow:0 12px 40px rgba(0,0,0,0.6); min-width:170px; animation:ctxIn .15s ease; }  
+    @keyframes ctxIn { from{opacity:0;transform:scale(.95);} to{opacity:1;transform:scale(1);} }  
+    .ctx-item { padding:8px 16px; font-size:13px; color:#cbd5e1; cursor:pointer; transition:background .15s; display:flex; align-items:center; gap:8px; white-space:nowrap; }  
+    .ctx-item:hover { background:rgba(99,102,241,0.15); color:white; }  
+    .ctx-item.danger:hover { background:rgba(220,38,38,0.15); color:#fca5a5; }  
+    .ctx-divider { border:none; border-top:1px solid rgba(99,102,241,0.15); margin:4px 0; }  
+
+    /* 表头格式（schema）色带 */  
+    .schema-colors { --s0:#818cf8; --s1:#38bdf8; --s2:#34d399; --s3:#f59e0b; --s4:#f43f5e; --s5:#a78bfa; --s6:#fb923c; --s7:#2dd4bf; }  
+    .schema-tag { display:inline-flex; align-items:center; gap:4px; font-size:10px; padding:2px 8px; border-radius:10px; font-weight:700; white-space:nowrap; }  
+
+    /* 表头格式统计卡片 */  
+    .schema-stat-card {  
+      background:rgba(15,23,42,0.6); border:1px solid rgba(99,102,241,0.15);  
+      border-radius:10px; padding:10px 14px; display:flex; align-items:center; gap:10px;  
+      transition:all .2s;  
+    }  
+    .schema-stat-card:hover { border-color:rgba(99,102,241,0.35); }  
+    .schema-stat-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }  
+    .schema-stat-bar { height:6px; border-radius:3px; transition:width .4s; }  
+  </style>  
+</head>  
+
+<body x-data="tableApp()" x-cloak @click="closeCtxMenu()" @keydown.escape.window="closeCtxMenu();stopCellEdit()">  
+
+  <!-- ══ Toast ══ -->  
+  <template x-if="toast.show">  
+    <div class="toast" :class="'toast-'+toast.type" x-text="toast.msg"></div>  
+  </template>  
+
+  <!-- ══ 右键菜单 ══ -->  
+  <div class="ctx-menu" x-show="ctxMenu.show" style="display:none;"  
+    :style="'top:'+ctxMenu.y+'px;left:'+ctxMenu.x+'px'" @click.stop>  
+    <div class="ctx-item" @click="ctxConfirmRow()">✅ <span x-text="ctxMenu.row&&ctxMenu.row.__confirmed?'撤销确认':'确认此行'"></span></div>  
+    <div class="ctx-item" @click="ctxEditRow()">✏️ 编辑此行</div>  
+    <div class="ctx-item" @click="ctxDuplicateRow()">📋 复制此行</div>  
+    <hr class="ctx-divider"/>  
+    <div class="ctx-item" @click="ctxDeleteRow()">🗑️ 删除此行</div>  
+    <template x-if="ctxMenu.ci!==null">  
+      <div>  
+        <hr class="ctx-divider"/>  
+        <div class="ctx-item danger" @click="ctxDeleteCol()">❌ 删除列「<span x-text="ctxMenu.ci!==null?headers[ctxMenu.ci]:''"></span>」</div>  
+      </div>  
+    </template>  
+  </div>  
+
+  <!-- ══════ 弹窗：添加自定义列 ══════ -->  
+  <div class="modal-overlay" x-show="showAddColModal" @click.self="showAddColModal=false" style="display:none;">  
+    <div class="modal-box" style="max-width:460px;">  
+      <h3 class="text-lg font-bold text-indigo-300 mb-5">➕ 添加自定义列</h3>  
+      <div class="mb-4">  
+        <span class="section-label">列名称</span>  
+        <input x-model="newColName" @keydown.enter="addCustomColumn()" type="text" placeholder="请输入列名..." class="input-area w-full rounded-lg px-4 py-2 text-sm"/>  
+      </div>  
+      <div class="mb-4">  
+        <span class="section-label">默认值（可选）</span>  
+        <input x-model="newColDefault" @keydown.enter="addCustomColumn()" type="text" placeholder="空白则留空..." class="input-area w-full rounded-lg px-4 py-2 text-sm"/>  
+      </div>  
+      <div class="mb-4">  
+        <span class="section-label">插入位置</span>  
+        <select x-model.number="newColPosition" class="input-area w-full rounded-lg px-4 py-2 text-sm">  
+          <option value="-1">末尾</option>  
+          <template x-for="(h,i) in headers" :key="'pos'+i"><option :value="i" x-text="'在「'+h+'」之前'"></option>  
+          </template>  
+        </select>  
+      </div>  
+      <div class="flex gap-3 justify-end">  
+        <button @click="showAddColModal=false" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200 border border-slate-600 hover:border-slate-400 transition-all">取消</button>  
+        <button @click="addCustomColumn()" class="btn-primary px-5 py-2 rounded-lg text-sm font-semibold text-white">确认添加</button>  
+      </div>  
+    </div>  
+  </div>  
+
+  <!-- ══════ 弹窗：删除列确认 ══════ -->  
+  <div class="modal-overlay" x-show="showDelColModal" @click.self="showDelColModal=false" style="display:none;">  
+    <div class="modal-box" style="max-width:500px;">  
+      <h3 class="text-lg font-bold text-red-400 mb-4">🗑️ 删除列确认</h3>  
+      <div class="del-col-preview mb-4">  
+        <div class="mb-2">⚠️ 即将删除列：<strong class="text-white" x-text="delColTarget.name"></strong></div>  
+        <div class="text-xs text-red-300/70">此操作不可撤销。</div>  
+      </div>  
+      <div class="mb-4 info-bar text-xs">  
+        📊 影响 <strong class="text-white" x-text="rows.length"></strong> 行  
+        <template x-if="delColTarget.isCustom"><span class="badge-custom ml-1">自定义列</span></template>  
+        <template x-if="!delColTarget.isCustom"><span class="text-amber-400 font-semibold ml-1">原始列</span></template>  
+      </div>  
+      <div class="mb-5">  
+        <span class="section-label">该列前5行预览</span>  
+        <div class="del-col-preview text-xs font-mono" style="max-height:100px;overflow-y:auto;">  
+          <template x-for="(row,i) in rows.slice(0,5)" :key="'dcp'+i">  
+            <div class="mb-0.5"><span class="text-slate-400" x-text="'#'+(i+1)+' '"></span><span class="text-slate-300" x-text="getCellValue(row,delColTarget.ci)"></span></div>  
+          </template>  
+          <div x-show="rows.length>5" class="text-slate-400 mt-1">... 还有 <span x-text="rows.length-5"></span> 行</div>  
+        </div>  
+      </div>  
+      <div class="flex gap-3 justify-end">  
+        <button @click="showDelColModal=false" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200 border border-slate-600 hover:border-slate-400 transition-all">取消</button>  
+        <button @click="doDeleteColumn()" class="btn-danger px-5 py-2 rounded-lg text-sm font-semibold text-white">确认删除</button>  
+      </div>  
+    </div>  
+  </div>  
+
+  <!-- ══════ 弹窗：导出设置 ══════ -->  
+  <div class="modal-overlay" x-show="showExportModal" @click.self="showExportModal=false" style="display:none;">  
+    <div class="modal-box" style="max-width:520px;">  
+      <h3 class="text-lg font-bold text-emerald-300 mb-4">📤 导出设置</h3>  
+      <div class="stat-card mb-5">  
+        <div class="flex gap-6 text-sm flex-wrap">  
+          <div><span class="text-slate-400">总记录：</span><span class="text-white font-bold" x-text="rows.length"></span></div>  
+          <div><span class="text-slate-400">已确认：</span><span class="text-emerald-400 font-bold" x-text="confirmedCount"></span></div>  
+          <div><span class="text-slate-400">未确认：</span><span class="text-amber-400 font-bold" x-text="rows.length-confirmedCount"></span></div>  
+        </div>  
+      </div>  
+      <div class="flex flex-col gap-4 mb-5">  
+        <label class="flex items-center gap-3 cursor-pointer">  
+          <div class="toggle-track" :style="exportOnlyConfirmed?'background:#4f46e5':'background:#334155'" @click="exportOnlyConfirmed=!exportOnlyConfirmed">  
+            <div class="toggle-thumb" :style="exportOnlyConfirmed?'transform:translateX(20px)':''"></div>  
+          </div>  
+          <span class="text-slate-300 text-sm">仅导出已确认的行</span>  
+        </label>  
+        <label class="flex items-center gap-3 cursor-pointer">  
+          <div class="toggle-track" :style="exportShowCustom?'background:#4f46e5':'background:#334155'" @click="exportShowCustom=!exportShowCustom">  
+            <div class="toggle-thumb" :style="exportShowCustom?'transform:translateX(20px)':''"></div>  
+          </div>  
+          <span class="text-slate-300 text-sm">包含自定义列</span>  
+        </label>  
+        <div x-show="schemas.length>1">  
+          <span class="section-label mb-2">按表头格式过滤导出</span>  
+          <div class="flex flex-wrap gap-2">  
+            <label class="flex items-center gap-2 cursor-pointer" x-for="(s,si) in schemas" :key="'exps'+si">  
+              <input type="checkbox" :checked="exportSchemaFilter.includes(si)" @change="toggleExportSchema(si)" class="accent-indigo-500"/>  
+              <span class="schema-tag" :style="'background:'+getSchemaColor(si)+'22;color:'+getSchemaColor(si)+';border:1px solid'+getSchemaColor(si)+'55'">  
+                <span class="inline-block w-2 h-2 rounded-full" :style="'background:'+getSchemaColor(si)"></span>  
+                <span x-text="s.name"></span>  
+                <span class="text-[9px] opacity-70" x-text="'('+getSchemaRowCount(si)+'行)'"></span>  
+              </span>  
+            </label>  
+          </div>  
+        </div>  
+      </div>  
+      <div class="flex gap-3 justify-end">  
+        <button @click="showExportModal=false" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200 border border-slate-600 hover:border-slate-400 transition-all">取消</button>  
+        <button @click="doExport()" class="btn-success px-5 py-2 rounded-lg text-sm font-semibold text-white">⬇️ 导出 HTML</button>  
+      </div>  
+    </div>  
+  </div>  
+
+  <!-- ══════ 弹窗：在当前表追加 ══════ -->  
+  <div class="modal-overlay" x-show="showAppendModal && appendTarget==='current'" @click.self="closeAppendModal()" style="display:none;">  
+    <div class="modal-box" style="max-width:720px;">  
+      <div class="flex items-center justify-between mb-1">  
+        <h3 class="text-lg font-bold text-amber-300">📎 在当前表追加</h3>  
+        <button @click="closeAppendModal()" class="text-slate-400 hover:text-slate-200 text-xl leading-none transition-colors">✕</button>  
+      </div>  
+      <p class="text-slate-400 text-xs mb-5">按现有表头格式，将新记录追加到当前表格末尾。</p>  
+
+      <div class="mb-5" x-show="schemas.length>0">  
+        <span class="section-label">选择表头格式</span>  
+        <div class="flex flex-wrap gap-2 mb-3">  
+          <template x-for="(s,si) in schemas" :key="'as'+si">  
+            <button class="tab-btn text-xs px-3 py-1.5"  
+              :class="appendSchemaIdx===si ? 'tab-active-amber' : 'tab-inactive'"  
+              @click="appendSchemaIdx=si">  
+              <span x-text="s.name"></span>  
+              <span class="text-[9px] opacity-60 ml-1" x-text="'('+s.headers.length+'列)'"></span>  
+            </button>  
+          </template>  
+        </div>  
+        <div x-show="appendSchemaIdx>=0 && schemas[appendSchemaIdx]" class="info-bar-amber text-xs">  
+          📋 使用「<strong class="text-amber-200" x-text="schemas[appendSchemaIdx]?.name||''"></strong>」格式，  
+          <strong class="text-amber-200" x-text="schemas[appendSchemaIdx]?.headers.length||0"></strong> 列，  
+          每条记录 = 连续 <strong class="text-amber-200" x-text="schemas[appendSchemaIdx]?.headers.length||0"></strong> 行  
+        </div>  
+      </div>  
+      <div x-show="schemas.length===0" class="info-bar-rose text-xs mb-5">当前无表头格式，请先导入数据或使用「新建表追加」。</div>  
+
+      <div class="mb-4">  
+        <span class="section-label">数据来源</span>  
+        <div class="flex gap-2 mb-3">  
+          <button @click="appendMode='text'" class="tab-btn text-xs" :class="appendMode==='text'?'tab-active-amber':'tab-inactive'">✏️ 文本</button>  
+          <button @click="appendMode='file'" class="tab-btn text-xs" :class="appendMode==='file'?'tab-active-amber':'tab-inactive'">📁 文件</button>  
+        </div>  
+        <div x-show="appendMode==='text'">  
+          <textarea x-model="appendValInput" class="input-area-amber w-full rounded-xl px-4 py-3 text-sm font-mono" rows="8" placeholder="粘贴数据...每列一行，多记录连续填写"></textarea>  
+        </div>  
+        <div x-show="appendMode==='file'">  
+          <div class="drop-zone-amber p-6 text-center" :class="appendDragOver?'drag-over':''"  
+            @dragover.prevent="appendDragOver=true" @dragleave="appendDragOver=false" @drop.prevent="onDropAppend($event)">  
+            <input type="file" accept=".txt" class="file-input-hidden" @change="onSelectAppendFile($event)"/>  
+            <div class="text-3xl mb-2">📄</div>  
+            <div class="text-slate-300 text-xs">拖拽/点击选择数据TXT</div>  
+            <div x-show="appendFileName" class="mt-2"><span class="file-badge file-badge-amber text-xs">📄 <span x-text="appendFileName"></span></span></div>  
+          </div>  
+        </div>  
+      </div>  
+
+      <div x-show="appendEstimate>0" class="info-bar mt-3 text-xs">  
+        📊 预计追加 <strong class="text-slate-200" x-text="appendEstimate"></strong> 条记录  
+      </div>  
+
+      <div class="flex gap-3 justify-end mt-5">  
+        <button @click="closeAppendModal()" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200 border border-slate-600 hover:border-slate-400 transition-all">取消</button>  
+        <button @click="doAppend()" class="btn-amber px-5 py-2 rounded-lg text-sm font-semibold text-white" :disabled="schemas.length===0">➕ 执行追加</button>  
+      </div>  
+    </div>  
+  </div>  
+
+  <!-- ══════ 弹窗：新建表追加 ══════ -->  
+  <div class="modal-overlay" x-show="showAppendModal && appendTarget==='new'" @click.self="closeAppendModal()" style="display:none;">  
+    <div class="modal-box" style="max-width:720px;">  
+      <div class="flex items-center justify-between mb-1">  
+        <h3 class="text-lg font-bold text-cyan-300">📋 新建表追加</h3>  
+        <button @click="closeAppendModal()" class="text-slate-400 hover:text-slate-200 text-xl leading-none transition-colors">✕</button>  
+      </div>  
+      <p class="text-slate-400 text-xs mb-5">新建一种表头格式，并将数据按该格式追加到当前表格。</p>  
+
+      <div class="mb-5 p-4 rounded-xl" style="background:rgba(6,182,212,0.06);border:1px solid rgba(6,182,212,0.2);">  
+        <span class="section-label">新建表头</span>  
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">  
+          <div>  
+            <span class="section-label">格式名称</span>  
+            <input x-model="appendNewSchemaName" type="text" placeholder="例：Format-B" class="input-area-cyan w-full rounded-lg px-3 py-2 text-sm"/>  
+          </div>  
+          <div>  
+            <span class="section-label">表头来源</span>  
+            <div class="flex gap-2">  
+              <button @click="appendNewHeadMode='text'" class="tab-btn text-xs px-3 py-1"  
+                :class="appendNewHeadMode==='text'?'tab-active-cyan':'tab-inactive'">✏️ 文本</button>  
+              <button @click="appendNewHeadMode='file'" class="tab-btn text-xs px-3 py-1"  
+                :class="appendNewHeadMode==='file'?'tab-active-cyan':'tab-inactive'">📁 文件</button>  
+            </div>  
+          </div>  
+        </div>  
+        <div x-show="appendNewHeadMode==='text'" class="mt-3">  
+          <textarea x-model="appendNewHeadInput" class="input-area-cyan w-full rounded-xl px-4 py-3 text-sm font-mono" rows="5" placeholder="每行一个列名..."></textarea>  
+        </div>  
+        <div x-show="appendNewHeadMode==='file'" class="mt-3">  
+          <div class="drop-zone-cyan p-5 text-center" :class="appendNewHeadDragOver?'drag-over':''"  
+            @dragover.prevent="appendNewHeadDragOver=true" @dragleave="appendNewHeadDragOver=false"  
+            @drop.prevent="onDropAppendNewHead($event)">  
+            <input type="file" accept=".txt" class="file-input-hidden" @change="onSelectAppendNewHeadFile($event)"/>  
+            <div class="text-3xl mb-2">📋</div>  
+            <div class="text-slate-300 text-xs">拖拽/点击选择列头TXT</div>  
+            <div x-show="appendNewHeadFileName" class="mt-2"><span class="file-badge file-badge-cyan text-xs">📄 <span x-text="appendNewHeadFileName"></span></span></div>  
+          </div>  
+        </div>  
+        <div x-show="parsedNewHeadPreview.length>0" class="info-bar-cyan mt-3 text-xs">  
+          🔍 解析到 <strong class="text-cyan-200" x-text="parsedNewHeadPreview.length"></strong> 列：<span class="text-slate-300" x-text="parsedNewHeadPreview.join(' | ')"></span>  
+        </div>  
+      </div>  
+
+      <div class="mb-4">  
+        <span class="section-label">数据来源</span>  
+        <div class="flex gap-2 mb-3">  
+          <button @click="appendMode='text'" class="tab-btn text-xs" :class="appendMode==='text'?'tab-active-cyan':'tab-inactive'">✏️ 文本</button>  
+          <button @click="appendMode='file'" class="tab-btn text-xs" :class="appendMode==='file'?'tab-active-cyan':'tab-inactive'">📁 文件</button>  
+        </div>  
+        <div x-show="appendMode==='text'">  
+          <textarea x-model="appendValInput" class="input-area-cyan w-full rounded-xl px-4 py-3 text-sm font-mono" rows="8" placeholder="粘贴数据...每列一行，多记录连续填写"></textarea>  
+        </div>  
+        <div x-show="appendMode==='file'">  
+          <div class="drop-zone-cyan p-6 text-center" :class="appendDragOver?'drag-over':''"  
+            @dragover.prevent="appendDragOver=true" @dragleave="appendDragOver=false" @drop.prevent="onDropAppend($event)">  
+            <input type="file" accept=".txt" class="file-input-hidden" @change="onSelectAppendFile($event)"/>  
+            <div class="text-3xl mb-2">📄</div>  
+            <div class="text-slate-300 text-xs">拖拽/点击选择数据TXT</div>  
+            <div x-show="appendFileName" class="mt-2"><span class="file-badge file-badge-cyan text-xs">📄 <span x-text="appendFileName"></span></span></div>  
+          </div>  
+        </div>  
+      </div>  
+
+      <div x-show="appendEstimate>0" class="info-bar-cyan mt-3 text-xs">  
+        📊 预计追加 <strong class="text-cyan-200" x-text="appendEstimate"></strong> 条记录  
+      </div>  
+
+      <div class="flex gap-3 justify-end mt-5">  
+        <button @click="closeAppendModal()" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200 border border-slate-600 hover:border-slate-400 transition-all">取消</button>  
+        <button @click="doAppend()" class="btn-cyan px-5 py-2 rounded-lg text-sm font-semibold text-white">📋 新建并追加</button>  
+      </div>  
+    </div>  
+  </div>  
+
+  <!-- ══════ 弹窗：编辑整行 ══════ -->  
+  <div class="modal-overlay" x-show="showEditRowModal" @click.self="showEditRowModal=false" style="display:none;">  
+    <div class="modal-box" style="max-width:640px;">  
+      <h3 class="text-lg font-bold text-indigo-300 mb-4">✏️ 编辑行 #<span x-text="editRowTarget?editRowTarget.__displayIndex:''"></span></h3>  
+      <div class="flex flex-col gap-3 mb-5">  
+        <template x-for="(col,ci) in headers" :key="'er'+ci">  
+          <div>  
+            <span class="section-label" x-text="col" style="margin-bottom:3px;"></span>  
+            <textarea class="input-area w-full rounded-lg px-3 py-2 text-sm font-mono" rows="2"  
+              :value="editRowTarget?getCellValue(editRowTarget,ci):''"  
+              @input="editRowData[ci]=$event.target.value"></textarea>  
+          </div>  
+        </template>  
+      </div>  
+      <div class="flex gap-3 justify-end">  
+        <button @click="showEditRowModal=false" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200 border border-slate-600 hover:border-slate-400 transition-all">取消</button>  
+        <button @click="saveEditRow()" class="btn-primary px-5 py-2 rounded-lg text-sm font-semibold text-white">💾 保存</button>  
+      </div>  
+    </div>  
+  </div>  
+
+  <!-- ══════ 弹窗：列数确认（首次解析时弹出） ══════ -->  
+  <div class="modal-overlay" x-show="showColCountModal" @click.self="showColCountModal=false" style="display:none;">  
+    <div class="modal-box" style="max-width:520px;">  
+      <h3 class="text-lg font-bold text-cyan-300 mb-4">🔢 确认列数</h3>  
+      <div class="info-bar-cyan mb-4 text-xs">  
+        从列头文件解析到 <strong class="text-white" x-text="parsedHeadLines.length"></strong> 个非空行。  
+        数据文件共 <strong class="text-white" x-text="parsedValLineCount"></strong> 个非空行。  
+      </div>  
+      <div class="mb-4">  
+        <span class="section-label">列头预览</span>  
+        <div class="preview-box" style="max-height:130px;">  
+          <template x-for="(h,i) in parsedHeadLines" :key="'phd'+i">  
+            <div class="mb-0.5">  
+              <span class="text-indigo-400 font-bold" x-text="'['+i+'] '"></span>  
+              <span class="text-slate-300" x-text="h"></span>  
+            </div>  
+          </template>  
+        </div>  
+      </div>  
+      <div class="mb-4">  
+        <span class="section-label">列数（可手动调整）</span>  
+        <input x-model.number="confirmedColCount" type="number" min="1" :max="parsedHeadLines.length"  
+          class="input-area w-full rounded-lg px-4 py-2 text-sm"/>  
+        <div class="text-xs text-slate-400 mt-1">  
+          以此列数计算：每 <span x-text="confirmedColCount"></span> 行 = 1条记录，  
+          预计 <strong class="text-indigo-300" x-text="confirmedColCount>0?Math.floor(parsedValLineCount/confirmedColCount):0"></strong> 条记录  
+          <span x-show="parsedValLineCount%confirmedColCount!==0" class="text-amber-400">（末尾有余行将补空）</span>  
+        </div>  
+      </div>  
+      <div class="mb-4">  
+        <span class="section-label">表头格式名称</span>  
+        <input x-model="colCountSchemaName" type="text" placeholder="例：Format-A" class="input-area w-full rounded-lg px-4 py-2 text-sm"/>  
+      </div>  
+      <div class="flex gap-3 justify-end">  
+        <button @click="showColCountModal=false" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200 border border-slate-600 hover:border-slate-400 transition-all">取消</button>  
+        <button @click="doConfirmedParse()" class="btn-cyan px-5 py-2 rounded-lg text-sm font-semibold text-white">🚀 确认并生成表格</button>  
+      </div>  
+    </div>  
+  </div>  
+
+  <!-- ══════════════════════════════════════════  
+       主体  
+  ════════════════════════════════════════════ -->  
+  <div class="max-w-screen-2xl mx-auto px-4 py-8">  
+    <div class="text-center mb-8">  
+      <h1 class="text-3xl font-black neon-title mb-2">📋 表格内容确认工具</h1>  
+      <p class="text-slate-400 text-sm">导入 · 多表头格式 · 在线编辑 · 增删列 · 逐行确认 · 导出</p>  
+    </div>  
+
+    <!-- ═══ 导入区域 ═══ -->  
+    <div class="glass-card rounded-2xl p-6 mb-6">  
+      <div class="section-title mb-4 flex-wrap gap-2">  
+        <div class="bar" style="background:#818cf8;"></div>  
+        <span class="text-indigo-300 font-bold text-[15px]">数据导入</span>  
+        <button type="button" @click="$refs.importModificationsInputInit&&$refs.importModificationsInputInit.click()" class="btn-rose text-white text-sm font-bold px-4 py-2 rounded-xl ml-auto" title="从之前导出的 JSON 文件恢复数据继续编辑">📂 导入历史数据</button>  
+        <input type="file" accept=".json,application/json" x-ref="importModificationsInputInit" @change="doImportModifications($event)" style="display:none">  
+        <span x-show="rows.length>0" class="text-xs text-slate-400">已有 <span class="text-indigo-300 font-bold" x-text="rows.length"></span> 条</span>  
+      </div>  
+      <div class="flex gap-2 mb-5 flex-wrap">  
+        <button @click="importTab='manual'" class="tab-btn" :class="importTab==='manual'?'tab-active-indigo':'tab-inactive'">✏️ 手动输入</button>  
+        <button @click="importTab='file'" class="tab-btn" :class="importTab==='file'?'tab-active-indigo':'tab-inactive'">📁 TXT 文件</button>  
+        <button @click="importTab='table'" class="tab-btn" :class="importTab==='table'?'tab-active-cyan':'tab-inactive'">📊 表格样式</button>  
+      </div>  
+
+      <!-- Tab1: 手动输入 -->  
+      <div x-show="importTab==='manual'">  
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">  
+          <div>  
+            <span class="section-label">列头（每行一个列名）</span>  
+            <textarea x-model="headInput" class="input-area w-full rounded-xl px-4 py-3 text-sm font-mono" rows="8"  
+              placeholder="例：&#10;Address&#10;Name&#10;Copies Number&#10;Short Description&#10;Reset On&#10;For De"></textarea>  
+          </div>  
+          <div>  
+            <span class="section-label">数据（每列一行，多条记录连续填写）</span>  
+            <textarea x-model="valInput" class="input-area w-full rounded-xl px-4 py-3 text-sm font-mono" rows="8"  
+              placeholder="若列头有6列，则每6行=1条记录：&#10;0x170&#10;CFG_RLM&#10;1&#10;RLM config&#10;grst&#10;[0:22](RW)"></textarea>  
+          </div>  
+        </div>  
+        <div class="flex flex-wrap gap-3">  
+          <button @click="startParse()" class="btn-primary text-white text-sm font-bold px-6 py-2.5 rounded-xl">🚀 解析</button>  
+          <button @click="loadSampleData()" class="btn-cyan text-white text-sm font-semibold px-5 py-2.5 rounded-xl">📂 示例</button>  
+          <button @click="clearAll()" class="btn-danger text-white text-sm font-semibold px-5 py-2.5 rounded-xl">🗑️ 清空</button>  
+        </div>  
+      </div>  
+
+      <!-- Tab2: TXT 文件 -->  
+      <div x-show="importTab==='file'">  
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">  
+          <div>  
+            <span class="section-label mb-2">列头 TXT</span>  
+            <div class="drop-zone p-7 text-center" :class="headDragOver?'drag-over':''"  
+              @dragover.prevent="headDragOver=true" @dragleave="headDragOver=false" @drop.prevent="onDropHead($event)">  
+              <input type="file" accept=".txt" class="file-input-hidden" @change="onSelectHeadFile($event)"/>  
+              <div class="text-4xl mb-2">📋</div>  
+              <div class="text-slate-300 text-sm font-semibold mb-1">拖拽列头TXT</div>  
+              <div class="text-slate-400 text-xs">或点击选择</div>  
+              <div x-show="headFileName" class="mt-3 flex justify-center"><span class="file-badge">📄 <span x-text="headFileName"></span></span></div>  
+            </div>  
+            <div x-show="headInput" class="mt-2"><span class="section-label mb-1">预览</span><div class="preview-box" x-text="headPreview"></div></div>  
+          </div>  
+          <div>  
+            <span class="section-label mb-2">数据 TXT</span>  
+            <div class="drop-zone p-7 text-center" :class="valDragOver?'drag-over':''"  
+              @dragover.prevent="valDragOver=true" @dragleave="valDragOver=false" @drop.prevent="onDropVal($event)">  
+              <input type="file" accept=".txt" class="file-input-hidden" @change="onSelectValFile($event)"/>  
+              <div class="text-4xl mb-2">📄</div>  
+              <div class="text-slate-300 text-sm font-semibold mb-1">拖拽数据TXT</div>  
+              <div class="text-slate-400 text-xs">或点击选择</div>  
+              <div x-show="valFileName" class="mt-3 flex justify-center"><span class="file-badge">📄 <span x-text="valFileName"></span></span></div>  
+            </div>  
+            <div x-show="valInput" class="mt-2"><span class="section-label mb-1">预览</span><div class="preview-box" x-text="valPreview"></div></div>  
+          </div>  
+        </div>  
+        <div class="flex flex-wrap gap-3">  
+          <button @click="startParse()" class="btn-primary text-white text-sm font-bold px-6 py-2.5 rounded-xl">🚀 解析</button>  
+          <button @click="clearAll()" class="btn-danger text-white text-sm font-semibold px-5 py-2.5 rounded-xl">🗑️ 清空</button>  
+        </div>  
+      </div>  
+
+      <!-- Tab3: 表格样式 -->  
+      <div x-show="importTab==='table'">  
+        <div class="info-bar-cyan mb-4">📌 支持Tab/CSV/竖线表格，第一行自动识别为列头。</div>  
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-5 mb-5">  
+          <div>  
+            <span class="section-label">粘贴表格内容</span>  
+            <textarea x-model="tableStyleInput" class="input-area-cyan w-full rounded-xl px-4 py-3 text-sm font-mono" rows="12" placeholder="粘贴TSV/CSV/Excel内容..."></textarea>  
+          </div>  
+          <div>  
+            <span class="section-label mb-2">或拖拽文件</span>  
+            <div class="drop-zone-cyan p-7 text-center" :class="tableStyleDragOver?'drag-over':''"  
+              @dragover.prevent="tableStyleDragOver=true" @dragleave="tableStyleDragOver=false" @drop.prevent="onDropTableStyle($event)">  
+              <input type="file" accept=".txt,.tsv,.csv" class="file-input-hidden" @change="onSelectTableStyleFile($event)"/>  
+              <div class="text-4xl mb-2">📊</div>  
+              <div class="text-slate-300 text-sm font-semibold">拖拽表格文件</div>  
+              <div x-show="tableStyleFileName" class="mt-3"><span class="file-badge file-badge-cyan">📄 <span x-text="tableStyleFileName"></span></span></div>  
+            </div>  
+            <div x-show="tableStyleInput.trim()" class="info-bar-cyan mt-3 text-xs">  
+              🔍 分隔符：<strong x-text="detectedDelimiter"></strong> ｜ 列数：<strong x-text="detectedColCount"></strong> ｜ 行数：<strong x-text="detectedRowCount"></strong>  
+            </div>  
+          </div>  
+        </div>  
+        <div class="flex flex-wrap gap-3">  
+          <button @click="parseTableStyle()" class="btn-cyan text-white text-sm font-bold px-6 py-2.5 rounded-xl">📊 解析</button>  
+          <button @click="clearAll()" class="btn-danger text-white text-sm font-semibold px-5 py-2.5 rounded-xl">🗑️ 清空</button>  
+        </div>  
+      </div>  
+    </div>  
+
+    <!-- ═══ 有数据时显示（每个表独立一块，新建表追加后新表出现在下方） ═══ -->  
+    <div x-show="tables.some(t=>t.rows.length>0)" style="display:none;">  
+
+      <!-- 搜索/过滤（全局共用） -->  
+      <div class="glass-card rounded-2xl px-5 py-3 mb-5 flex flex-wrap items-center gap-3">  
+        <div class="relative flex-1" style="min-width:200px;">  
+          <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm select-none">🔍</span>  
+          <input x-model="searchText" type="text" placeholder="搜索任意字段..." class="search-input w-full"/>  
+        </div>  
+        <div class="flex gap-2 flex-wrap">  
+          <button @click="filterMode='all'" class="tab-btn text-xs px-3 py-1.5" :class="filterMode==='all'?'tab-active-indigo':'tab-inactive'">全部</button>  
+          <button @click="filterMode='confirmed'" class="tab-btn text-xs px-3 py-1.5" :class="filterMode==='confirmed'?'tab-active-indigo':'tab-inactive'">已确认</button>  
+          <button @click="filterMode='pending'" class="tab-btn text-xs px-3 py-1.5" :class="filterMode==='pending'?'tab-active-indigo':'tab-inactive'">未确认</button>  
+          <button @click="filterMode='appended'" class="tab-btn text-xs px-3 py-1.5" :class="filterMode==='appended'?'tab-active-amber':'tab-inactive'">追加行</button>  
+        </div>  
+        <div class="flex items-center gap-2 flex-shrink-0" title="导出所有表格时使用的 HTML 报告标题">  
+          <span class="text-slate-400 text-xs whitespace-nowrap">报告标题</span>  
+          <input type="text" x-model="exportReportTitle" placeholder="表格内容确认报告（全部）" class="search-input text-sm" style="width:220px;"/>  
+        </div>  
+        <button @click="exportAllModifications()" class="btn-purple text-white text-sm font-bold px-4 py-2 rounded-xl whitespace-nowrap" title="将所有表的修改导出为一份 JSON">💾 导出所有修改</button>  
+        <button @click="doExportAllTables()" class="btn-success text-white text-sm font-bold px-4 py-2 rounded-xl whitespace-nowrap" title="将所有表格合并导出为一份 HTML 报告">📤 导出所有表格</button>  
+      </div>  
+      <input type="file" accept=".json,application/json" x-ref="importModificationsInputMulti" @change="doImportModifications($event)" style="display:none">  
+
+      <template x-for="(t, ti) in tables" :key="'table'+t.id">  
+        <div x-show="t.rows.length>0" class="mb-10 pb-10 border-b border-slate-700/40 last:border-b-0 last:pb-0">  
+          <div class="section-title mb-3 flex items-center gap-2">  
+            <div class="bar" style="background:#818cf8;"></div>  
+            <span class="text-indigo-300 font-bold text-base" x-text="t.name"></span>  
+            <span class="text-slate-400 text-xs" x-text="'('+t.rows.length+' 条)'"></span>  
+          </div>  
+
+      <!-- 表头格式统计（当前表 t） -->  
+      <div class="glass-card rounded-2xl p-5 mb-5" x-show="t.schemas&&t.schemas.length>0">  
+        <div class="section-title mb-3">  
+          <div class="bar" style="background:#a78bfa;"></div>  
+          <span class="text-purple-300 font-bold text-[15px]">表头格式统计</span>  
+          <span class="ml-2 text-xs text-slate-400">共 <span x-text="t.schemas.length"></span> 种格式</span>  
+        </div>  
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">  
+          <template x-for="(s,si) in t.schemas" :key="'sc'+t.id+'_'+si">  
+            <div class="schema-stat-card">  
+              <div class="schema-stat-dot" :style="'background:'+getSchemaColor(si)"></div>  
+              <div class="flex-1 min-w-0">  
+                <div class="flex items-center gap-2 mb-1">  
+                  <span class="text-white font-bold text-sm truncate" x-text="s.name"></span>  
+                  <span class="schema-tag text-[10px]" :style="'background:'+getSchemaColor(si)+'22;color:'+getSchemaColor(si)+';border:1px solid'+getSchemaColor(si)+'44'">  
+                    <span x-text="s.headers.length+'列'"></span>  
+                  </span>  
+                </div>  
+                <div class="flex items-center gap-2 mb-1">  
+                  <div class="flex-1 progress-bar-bg" style="height:5px;">  
+                    <div class="schema-stat-bar" :style="'width:'+getSchemaRowPctForTable(si,t)+'%;background:'+getSchemaColor(si)"></div>  
+                  </div>  
+                  <span class="text-xs text-slate-400 flex-shrink-0">  
+                    <span class="font-bold text-white" x-text="getSchemaRowCountForTable(si,t)"></span> 行  
+                    <span class="text-slate-400 ml-1" x-text="'('+getSchemaRowPctForTable(si,t)+'%)'"></span>  
+                  </span>  
+                </div>  
+                <div class="flex items-center gap-3 text-[11px] text-slate-400">  
+                  <span>✅ <span class="text-emerald-400 font-semibold" x-text="getSchemaConfirmedCountForTable(si,t)"></span> 已确认</span>  
+                  <span>⏳ <span class="text-amber-400 font-semibold" x-text="getSchemaRowCountForTable(si,t)-getSchemaConfirmedCountForTable(si,t)"></span> 未确认</span>  
+                </div>  
+                <div class="mt-1 text-[10px] text-slate-400 truncate" x-text="s.headers.slice(0,4).join(' · ')+(s.headers.length>4?' …':'')"></div>  
+              </div>  
+            </div>  
+          </template>  
+        </div>  
+        <div class="flex flex-wrap gap-4 pt-3 border-t border-slate-700/50">  
+          <div class="stat-card flex-1" style="min-width:120px;">  
+            <div class="section-label" style="margin-bottom:2px;">总记录</div>  
+            <div class="text-2xl font-black text-white" x-text="t.rows.length"></div>  
+          </div>  
+          <div class="stat-card flex-1" style="min-width:120px;">  
+            <div class="section-label" style="margin-bottom:2px;">已确认</div>  
+            <div class="text-2xl font-black text-emerald-400" x-text="getTableConfirmedCount(t)"></div>  
+          </div>  
+          <div class="stat-card flex-1" style="min-width:120px;">  
+            <div class="section-label" style="margin-bottom:2px;">未确认</div>  
+            <div class="text-2xl font-black text-amber-400" x-text="t.rows.length-getTableConfirmedCount(t)"></div>  
+          </div>  
+          <div class="stat-card flex-1" style="min-width:200px;">  
+            <div class="section-label" style="margin-bottom:4px;">总进度</div>  
+            <div class="progress-bar-bg mb-1"><div class="progress-bar-fill" :style="'width:'+getTableProgressPct(t)+'%'"></div></div>  
+            <div class="text-right text-xs text-slate-400" x-text="getTableProgressPct(t)+'%'"></div>  
+          </div>  
+        </div>  
+      </div>  
+
+      <!-- 操作栏（当前表 ti） -->  
+      <div class="glass-card rounded-2xl p-4 mb-5">  
+        <div class="flex flex-wrap items-center gap-2">  
+          <button @click="activeTableIndex=ti;exportModifications()" class="btn-purple text-white text-sm font-bold px-4 py-2 rounded-xl" title="导出此表">💾 导出当前修改</button>  
+          <button @click="activeTableIndex=ti;$refs.importModificationsInputMulti&&$refs.importModificationsInputMulti.click()" class="btn-rose text-white text-sm font-bold px-4 py-2 rounded-xl" title="导入到此表">📂 导入历史数据</button>  
+          <button @click="activeTableIndex=ti;confirmAll()" class="btn-success text-white text-sm font-bold px-4 py-2 rounded-xl">✅ 全部确认</button>  
+          <button @click="activeTableIndex=ti;cancelAllConfirm()" class="btn-warning text-white text-sm font-bold px-4 py-2 rounded-xl">↩️ 取消全部</button>  
+          <button @click="activeTableIndex=ti;openAppendModal('current')" class="btn-amber text-white text-sm font-bold px-4 py-2 rounded-xl">📎 在当前表追加</button>  
+          <button @click="openAppendModal('new')" class="btn-cyan text-white text-sm font-bold px-4 py-2 rounded-xl">📋 新建表追加</button>  
+          <button @click="activeTableIndex=ti;showAddColModal=true;newColPosition=-1;" class="btn-primary text-white text-sm font-bold px-4 py-2 rounded-xl">➕ 添加列</button>  
+          <button @click="activeTableIndex=ti;showExportModal=true;initExportSchemaFilter();" class="btn-cyan text-white text-sm font-bold px-4 py-2 rounded-xl">📤 导出</button>  
+          <button @click="clearTableByIndex(ti)" class="btn-danger text-white text-sm font-bold px-4 py-2 rounded-xl ml-auto">🗑️ 清空此表</button>  
+        </div>  
+      </div>  
+
+      <!-- 编辑提示 -->  
+      <div class="edit-mode-bar mb-4">  
+        <div class="edit-mode-dot"></div>  
+        <span>💡 <strong>在线编辑</strong>：双击单元格编辑 · 右键快捷菜单 · <kbd style="background:rgba(99,102,241,0.2);border:1px solid rgba(129,140,248,0.3);border-radius:3px;padding:0 4px;font-size:10px;color:#818cf8;">Enter</kbd> 保存 · <kbd style="background:rgba(99,102,241,0.2);border:1px solid rgba(129,140,248,0.3);border-radius:3px;padding:0 4px;font-size:10px;color:#818cf8;">Esc</kbd> 取消</span>  
+      </div>  
+        <div class="text-slate-400 text-xs whitespace-nowrap mb-2">显示 <span class="text-slate-200 font-bold" x-text="getFilteredRowsForTable(t).length"></span> 条</div>  
+
+      <!-- 表格主体（当前表 t） -->  
+      <div class="glass-card rounded-2xl overflow-hidden mb-6">  
+        <div class="table-container">  
+          <table>  
+            <thead>  
+              <tr>  
+                <th style="width:48px;text-align:center;">#</th>  
+                <th style="width:80px;text-align:center;">格式</th>  
+                <template x-for="(col,ci) in t.headers" :key="'h'+t.id+'_'+ci">  
+                  <th @contextmenu.prevent="activeTableIndex=ti;openCtxMenuCol($event,ci)">  
+                    <div class="th-inner">  
+                      <template x-if="editingHeaderTableIndex===ti && editingHeaderIdx===ci">  
+                        <input type="text" class="th-edit-input" :value="col"  
+                          @keydown.enter="saveHeaderEdit($event,ci)"  
+                          @keydown.escape="editingHeaderIdx=-1;editingHeaderTableIndex=-1"  
+                          @blur="saveHeaderEdit($event,ci)"  
+                          x-init="$nextTick(()=>$el.focus())"/>  
+                      </template>  
+                      <template x-if="!(editingHeaderTableIndex===ti && editingHeaderIdx===ci)">  
+                        <span class="cursor-pointer select-none" @dblclick="activeTableIndex=ti;editingHeaderTableIndex=ti;editingHeaderIdx=ci" x-text="col"></span>  
+                      </template>  
+                      <template x-if="t.customColIndices&&t.customColIndices.includes(ci)">  
+                        <span class="badge-custom">自定义</span>  
+                      </template>  
+                      <button class="th-del-btn" @click.stop="activeTableIndex=ti;openDelColModal(ci)" title="删除此列">✕</button>  
+                    </div>  
+                  </th>  
+                </template>  
+                <th style="width:110px;text-align:center;">状态</th>  
+                <th style="width:130px;text-align:center;">操作</th>  
+              </tr>  
+            </thead>  
+            <tbody>  
+              <template x-for="(row,ri) in getFilteredRowsForTable(t)" :key="'r'+t.id+'_'+row.__id">  
+                <tr :class="[row.__confirmed?'row-confirmed':'',row.__appended?'row-appended':'',row.__isNew?'row-new-flash':'']"  
+                    @contextmenu.prevent="activeTableIndex=ti;openCtxMenuRow($event,row,null)">  
+                  <td class="text-center text-slate-400 text-xs">  
+                    <span x-text="row.__displayIndex"></span>  
+                    <template x-if="row.__appended"><span class="badge-new ml-1">新</span></template>  
+                  </td>  
+                  <td class="text-center">  
+                    <template x-if="row.__schemaIdx>=0 && t.schemas&&t.schemas[row.__schemaIdx]">  
+                      <span class="schema-tag" :style="'background:'+getSchemaColor(row.__schemaIdx)+'22;color:'+getSchemaColor(row.__schemaIdx)+';border:1px solid'+getSchemaColor(row.__schemaIdx)+'44;font-size:9px;'">  
+                        <span x-text="t.schemas[row.__schemaIdx].name"></span>  
+                      </span>  
+                    </template>  
+                  </td>  
+                  <template x-for="(col,ci) in t.headers" :key="'c'+t.id+'_'+row.__id+'_'+ci">  
+                    <td @contextmenu.prevent.stop="activeTableIndex=ti;openCtxMenuRow($event,row,ci)" @dblclick.stop="startCellEdit(row,ci,ti)">  
+                      <template x-if="editingCell.tableIndex===ti && editingCell.rowId===row.__id && editingCell.ci===ci">  
+                        <div>  
+                          <textarea class="cell-input" rows="2"  
+                            :value="getCellValueForTable(row,ci,t)"  
+                            @keydown.enter.prevent="activeTableIndex=ti;saveCellEdit(row,ci,$event.target.value)"  
+                            @keydown.escape="stopCellEdit()"  
+                            @blur="activeTableIndex=ti;saveCellEdit(row,ci,$event.target.value)"  
+                            x-init="$nextTick(()=>{$el.focus();$el.setSelectionRange($el.value.length,$el.value.length)})"></textarea>  
+                          <div class="cell-edit-hint"><span><kbd>Enter</kbd> 保存</span><span><kbd>Esc</kbd> 取消</span></div>  
+                        </div>  
+                      </template>  
+                      <template x-if="!(editingCell.tableIndex===ti && editingCell.rowId===row.__id && editingCell.ci===ci)">  
+                        <div class="cell-view">  
+                          <span class="cell-text text-xs leading-relaxed" x-text="getCellValueForTable(row,ci,t)"></span>  
+                          <span class="cell-edit-icon" @click.stop="startCellEdit(row,ci,ti)">✏️</span>  
+                        </div>  
+                      </template>  
+                    </td>  
+                  </template>  
+                  <td class="text-center">  
+                    <span x-show="row.__confirmed" class="badge-confirmed">✓ 已确认</span>  
+                    <span x-show="!row.__confirmed" class="badge-pending">待确认</span>  
+                  </td>  
+                  <td class="text-center">  
+                    <div class="flex items-center justify-center gap-1">  
+                      <button x-show="!row.__confirmed" @click="activeTableIndex=ti;confirmRow(row)" class="btn-sm btn-success">确认</button>  
+                      <button x-show="row.__confirmed" @click="activeTableIndex=ti;revokeRow(row)" class="btn-sm btn-warning">撤销</button>  
+                      <button @click="activeTableIndex=ti;openEditRowModal(row)" class="btn-sm btn-primary" title="编辑">✏️</button>  
+                      <button @click="activeTableIndex=ti;deleteRow(row)" class="btn-sm btn-danger" title="删除">🗑️</button>  
+                    </div>  
+                  </td>  
+                </tr>  
+              </template>  
+              <tr x-show="getFilteredRowsForTable(t).length===0">  
+                <td :colspan="(t.headers?t.headers.length:0)+4" class="text-center text-slate-400 py-16 text-sm">😶 没有匹配的数据</td>  
+              </tr>  
+            </tbody>  
+          </table>  
+        </div>  
+      </div>  
+
+      <!-- 修改历史（当前表 t） -->  
+      <div class="glass-card rounded-2xl p-5 mb-6" x-show="t.editHistory&&t.editHistory.length>0">  
+        <div class="section-title mb-3">  
+          <div class="bar" style="background:#f59e0b;"></div>  
+          <span class="text-amber-300 font-bold text-[15px]">修改历史</span>  
+          <span class="ml-2 text-xs text-slate-400">（最近 <span x-text="t.editHistory.length"></span> 条）</span>  
+          <button @click="t.editHistory=[]" class="ml-auto text-xs text-slate-400 hover:text-slate-300 transition-colors">清空</button>  
+        </div>  
+        <div class="flex flex-col gap-2 max-h-40 overflow-y-auto">  
+          <template x-for="(h,hi) in (t.editHistory||[]).slice().reverse()" :key="'hist'+t.id+'_'+hi">  
+            <div class="history-item">  
+              <div class="history-dot" :style="'background:'+(h.type==='cell'?'#818cf8':h.type==='col-del'?'#f43f5e':h.type==='row-del'?'#f43f5e':h.type==='header'?'#38bdf8':'#fbbf24')"></div>  
+              <span class="text-slate-400 text-xs flex-shrink-0" x-text="h.time"></span>  
+              <span class="text-slate-300 text-xs" x-text="h.desc"></span>  
+            </div>  
+          </template>  
+        </div>  
+      </div>  
+
+        </div>  
+      </template>  
+
+    </div><!-- /有数据时 -->  
+
+    <!-- 空状态 -->  
+    <div x-show="!tables.some(t=>t.rows.length>0)" class="text-center py-24 text-slate-400" style="display:none;">  
+      <div class="text-6xl mb-4">📄</div>  
+      <div class="text-lg font-semibold text-slate-300">请先导入表头和数据</div>  
+      <div class="text-sm text-slate-400 mt-2">支持手动输入 / TXT文件 / 表格样式</div>  
+    </div>  
+
+  </div><!-- /max-w -->  
+
+<!-- ══════════════════════════════════════════  
+     JavaScript  
+════════════════════════════════════════════ -->  
+<script>  
+function tableApp() {  
+  return {  
+
+    /* ── 导入 ── */  
+    importTab: 'manual',  
+    headInput: '', valInput: '',  
+    headFileName: '', headDragOver: false,  
+    valFileName: '', valDragOver: false,  
+    tableStyleInput: '', tableStyleFileName: '', tableStyleDragOver: false,  
+
+    /* ── 列数确认弹窗 ── */  
+    showColCountModal: false,  
+    parsedHeadLines: [],  
+    parsedValLineCount: 0,  
+    confirmedColCount: 0,  
+    colCountSchemaName: 'Format-A',  
+    _pendingParseIsAppend: false,  
+
+    /* ── 多表：每个表独立表头与统计 ── */  
+    tables: [ { id: 1, name: '表1', headers: [], customColIndices: [], schemas: [], rows: [], idCounter: 0, editHistory: [] } ],  
+    activeTableIndex: 0,  
+    _nextTableId: 2,
+    exportReportTitle: '表格内容确认报告（全部）',
+
+    /* ── 表格核心（委托到当前表，保留同名便于模板兼容） ── */  
+    get currentTable() {  
+      if (!this.tables.length) return null;  
+      return this.tables[this.activeTableIndex] ?? this.tables[0];  
+    },  
+    get schemas() { return this.currentTable?.schemas ?? []; },  
+    get headers() { return this.currentTable?.headers ?? []; },  
+    get customColIndices() { return this.currentTable?.customColIndices ?? []; },  
+    get rows() { return this.currentTable?.rows ?? []; },  
+    get idCounter() { return this.currentTable?.idCounter ?? 0; },  
+    get editHistory() { return this.currentTable?.editHistory ?? []; },  
+    set editHistory(v) { if (this.currentTable) this.currentTable.editHistory = v; },  
+
+    /* ── 弹窗 ── */  
+    showAddColModal: false, newColName: '', newColDefault: '', newColPosition: -1,  
+    showExportModal: false, exportOnlyConfirmed: false, exportShowCustom: true,  
+    exportSchemaFilter: [],  
+    showDelColModal: false, delColTarget: { ci:-1, name:'', isCustom:false },  
+    showEditRowModal: false, editRowTarget: null, editRowData: {},  
+
+    /* ── 追加 ── */  
+    showAppendModal: false,  
+    appendTarget: 'current',  // 'current' | 'new'
+    appendMode: 'text',  
+    appendSchemaIdx: 0,  
+    appendNewSchema: false,  
+    appendNewSchemaName: '',  
+    appendNewHeadMode: 'text',  
+    appendNewHeadInput: '',  
+    appendNewHeadFileName: '',  
+    appendNewHeadDragOver: false,  
+    appendValInput: '',  
+    appendFileName: '',  
+    appendDragOver: false,  
+
+    /* ── 单元格/列头编辑 ── */  
+    editingCell: { tableIndex: -1, rowId: null, ci: null },  
+    editingHeaderIdx: -1,  
+    editingHeaderTableIndex: -1,  
+
+    /* ── 右键菜单 ── */  
+    ctxMenu: { show:false, x:0, y:0, row:null, ci:null },  
+
+    /* ── 搜索/过滤 ── */  
+    searchText: '', filterMode: 'all',  
+
+    /* ── Toast ── */  
+    toast: { show:false, msg:'', type:'info' },  
+    _toastTimer: null,  
+
+    /* ════════════════════ 计算属性 ════════════════════ */  
+
+    get confirmedCount() { return this.rows.filter(r=>r.__confirmed).length; },  
+    get progressPct() {  
+      if (!this.rows.length) return 0;  
+      return Math.round(this.confirmedCount/this.rows.length*100);  
+    },  
+    get filteredRows() {  
+      let list = this.rows;  
+      if (this.filterMode==='confirmed') list=list.filter(r=>r.__confirmed);  
+      else if (this.filterMode==='pending') list=list.filter(r=>!r.__confirmed);  
+      else if (this.filterMode==='appended') list=list.filter(r=>r.__appended);  
+      else if (this.filterMode.startsWith('schema_')) {  
+        const si=parseInt(this.filterMode.split('_')[1]);  
+        list=list.filter(r=>r.__schemaIdx===si);  
+      }  
+      const q=this.searchText.trim().toLowerCase();  
+      if (q) {  
+        list=list.filter(r=>{  
+          const inData=r.__data.some(v=>(v||'').toLowerCase().includes(q));  
+          const inCustom=Object.values(r.__custom).some(v=>(v||'').toLowerCase().includes(q));  
+          return inData||inCustom;  
+        });  
+      }  
+      return list;  
+    },  
+    get headPreview() {  
+      const l=this.headInput.split('\n');  
+      return l.slice(0,15).join('\n')+(l.length>15?'\n...':'');  
+    },  
+    get valPreview() {  
+      const l=this.valInput.split('\n');  
+      return l.slice(0,18).join('\n')+(l.length>18?'\n...':'');  
+    },  
+    get detectedDelimiter() { return this._detectDelimiterLabel(this.tableStyleInput); },  
+    get detectedColCount() {  
+      const lines=this.tableStyleInput.split('\n').filter(l=>l.trim());  
+      if (!lines.length) return 0;  
+      return this._splitLine(lines[0],this._getDelimiterChar(this.tableStyleInput)).length;  
+    },  
+    get detectedRowCount() {  
+      return this.tableStyleInput.split('\n').filter(l=>l.trim()).length;  
+    },  
+    get parsedNewHeadPreview() {  
+      if (!this.appendNewSchema) return [];  
+      const raw=this.appendNewHeadInput.trim();  
+      if (!raw) return [];  
+      return this._parseHeadRaw(raw);  
+    },  
+    get appendEstimate() {  
+      const colCount=this._getAppendColCount();  
+      if (!colCount) return 0;  
+      const lines=this.appendValInput.split('\n').filter(l=>l.trim()!=='');  
+      return colCount>0?Math.floor(lines.length/colCount):0;  
+    },  
+
+    /* ════════════════════ Schema 颜色/统计 ════════════════════ */  
+
+    _schemaColorPalette: [  
+      '#818cf8','#38bdf8','#34d399','#f59e0b',  
+      '#f43f5e','#a78bfa','#fb923c','#2dd4bf',  
+      '#e879f9','#4ade80','#facc15','#60a5fa'  
+    ],  
+    getSchemaColor(si) {  
+      return this._schemaColorPalette[si % this._schemaColorPalette.length];  
+    },  
+    getSchemaRowCount(si) {  
+      return this.rows.filter(r=>r.__schemaIdx===si).length;  
+    },  
+    getSchemaConfirmedCount(si) {  
+      return this.rows.filter(r=>r.__schemaIdx===si&&r.__confirmed).length;  
+    },  
+    getSchemaRowPct(si) {  
+      if (!this.rows.length) return 0;  
+      return Math.round(this.getSchemaRowCount(si)/this.rows.length*100);  
+    },  
+    getTableConfirmedCount(t) { return (t&&t.rows) ? t.rows.filter(r=>r.__confirmed).length : 0; },  
+    getTableProgressPct(t) {  
+      if (!t||!t.rows||!t.rows.length) return 0;  
+      return Math.round(this.getTableConfirmedCount(t)/t.rows.length*100);  
+    },  
+    getFilteredRowsForTable(t) {  
+      if (!t||!t.rows) return [];  
+      let list = t.rows;  
+      if (this.filterMode==='confirmed') list=list.filter(r=>r.__confirmed);  
+      else if (this.filterMode==='pending') list=list.filter(r=>!r.__confirmed);  
+      else if (this.filterMode==='appended') list=list.filter(r=>r.__appended);  
+      else if (this.filterMode.startsWith('schema_')) {  
+        const si=parseInt(this.filterMode.split('_')[1]);  
+        list=list.filter(r=>r.__schemaIdx===si);  
+      }  
+      const q=this.searchText.trim().toLowerCase();  
+      if (q) list=list.filter(r=>{  
+        const inData=(r.__data||[]).some(v=>(v||'').toLowerCase().includes(q));  
+        const inCustom=Object.values(r.__custom||{}).some(v=>(v||'').toLowerCase().includes(q));  
+        return inData||inCustom;  
+      });  
+      return list;  
+    },  
+    getCellValueForTable(row, ci, t) {  
+      if (!t) return '';  
+      const colName = (t.headers||[])[ci];  
+      if (!colName) return '';  
+      if ((t.customColIndices||[]).includes(ci)) return row.__custom[colName] || '';  
+      const schema = (t.schemas||[])[row.__schemaIdx];  
+      if (!schema) return '';  
+      const schemaColIdx = schema.headers.indexOf(colName);  
+      if (schemaColIdx === -1) return '';  
+      return (row.__data||[])[schemaColIdx] || '';  
+    },  
+    getSchemaRowCountForTable(si, t) { return (t&&t.rows) ? t.rows.filter(r=>r.__schemaIdx===si).length : 0; },  
+    getSchemaConfirmedCountForTable(si, t) { return (t&&t.rows) ? t.rows.filter(r=>r.__schemaIdx===si&&r.__confirmed).length : 0; },  
+    getSchemaRowPctForTable(si, t) {  
+      if (!t||!t.rows||!t.rows.length) return 0;  
+      return Math.round(this.getSchemaRowCountForTable(si,t)/t.rows.length*100);  
+    },  
+
+    /* ════════════════════ 工具函数 ════════════════════ */  
+
+    _cleanLine(line) {  
+      // 去除行尾tab和空白，但保留行内内容  
+      return line.replace(/\t+$/, '').trim();  
+    },  
+
+    /* ★ 修复核心：每个非空行就是一个列名，不做任何拼合 ★ */  
+    _parseHeadRaw(raw) {  
+      return raw.split('\n')  
+        .map(l => this._cleanLine(l))  
+        .filter(l => l !== '');  
+    },  
+
+    _parseValLines(raw, colCount) {  
+      // 每行一个cell值，colCount行组成一条记录  
+      const lines = raw.split('\n').map(l => this._cleanLine(l));  
+      const records = [];  
+      let cells = [];  
+      for (let i = 0; i < lines.length; i++) {  
+        const line = lines[i];  
+        // 跳过记录间空行（仅当cells为空时）  
+        if (line === '' && cells.length === 0) continue;  
+        cells.push(line);  
+        if (cells.length === colCount) {  
+          records.push([...cells]);  
+          cells = [];  
+        }  
+      }  
+      // 末尾不足一条记录的行补空  
+      if (cells.length > 0) {  
+        while (cells.length < colCount) cells.push('');  
+        records.push(cells);  
+      }  
+      return records;  
+    },  
+
+    _detectDelimiterLabel(text) {  
+      const s=text.split('\n').slice(0,5).join('\n');  
+      const t=(s.match(/\t/g)||[]).length,c=(s.match(/,/g)||[]).length,p=(s.match(/\|/g)||[]).length;  
+      if (t>=c&&t>=p) return 'Tab(\\t)';  
+      if (c>=p) return '逗号(,)';  
+      return '竖线(|)';  
+    },  
+    _getDelimiterChar(text) {  
+      const s=text.split('\n').slice(0,5).join('\n');  
+      const t=(s.match(/\t/g)||[]).length,c=(s.match(/,/g)||[]).length,p=(s.match(/\|/g)||[]).length;  
+      if (t>=c&&t>=p) return '\t';  
+      if (c>=p) return ',';  
+      return '|';  
+    },  
+    _splitLine(line,d) {  
+      if (d==='\t') return line.split('\t').map(s=>s.trim());  
+      if (d===',') return this._parseCSVLine(line);  
+      return line.split('|').map(s=>s.trim()).filter((s,i,a)=>!(i===0&&s==='')&&!(i===a.length-1&&s===''));  
+    },  
+    _parseCSVLine(line) {  
+      const r=[];let c='',q=false;  
+      for (let i=0;i<line.length;i++){  
+        const ch=line[i];  
+        if (ch==='"'){if(q&&line[i+1]==='"'){c+='"';i++;}else q=!q;}  
+        else if(ch===','&&!q){r.push(c.trim());c='';}  
+        else c+=ch;  
+      }  
+      r.push(c.trim());return r;  
+    },  
+    _nowStr() {  
+      const d=new Date();  
+      return [d.getHours(),d.getMinutes(),d.getSeconds()].map(n=>n.toString().padStart(2,'0')).join(':');  
+    },  
+    _addHistory(type,desc) {  
+      this.editHistory.push({type,desc,time:this._nowStr()});  
+      if (this.editHistory.length>50) this.editHistory.shift();  
+    },  
+
+    /* ════════════════════ 合并headers（所有schema的列合集） ════════════════════ */  
+
+    _rebuildHeaders() {  
+      // 保持现有自定义列，将所有schema的header按首次出现顺序合并  
+      const seen = new Set();  
+      const result = [];  
+      this.schemas.forEach(s => {  
+        s.headers.forEach(h => {  
+          if (!seen.has(h)) { seen.add(h); result.push(h); }  
+        });  
+      });  
+      // 追加自定义列（保持原顺序）  
+      this.headers.forEach((h, ci) => {  
+        if (this.customColIndices.includes(ci) && !seen.has(h)) {  
+          seen.add(h); result.push(h);  
+        }  
+      });  
+      // 更新 customColIndices  
+      const newCustom = [];  
+      result.forEach((h, ci) => {  
+        if (this.customColIndices.includes(this.headers.indexOf(h))) newCustom.push(ci);  
+        // 若原来就是自定义（原headers里没有但result里有）  
+        if (!this.schemas.some(s=>s.headers.includes(h)) && this.headers.includes(h)) newCustom.push(ci);  
+      });  
+      if (this.currentTable) {
+        this.currentTable.customColIndices = [...new Set(newCustom)];
+        this.currentTable.headers = result;
+      }
+    },  
+
+    /* ════════════════════ 获取/设置单元格值 ════════════════════ */  
+
+    getCellValue(row, ci) {  
+      const colName = this.headers[ci];  
+      if (this.customColIndices.includes(ci)) {  
+        return row.__custom[colName] || '';  
+      }  
+      // 找该行所属schema，用schema的headers索引取data  
+      const schema = this.schemas[row.__schemaIdx];  
+      if (!schema) return '';  
+      const schemaColIdx = schema.headers.indexOf(colName);  
+      if (schemaColIdx === -1) return ''; // 该行的schema里没有这列  
+      return row.__data[schemaColIdx] || '';  
+    },  
+
+    setCellValue(row, ci, val) {  
+      const colName = this.headers[ci];  
+      if (this.customColIndices.includes(ci)) {  
+        row.__custom[colName] = val;  
+        return;  
+      }  
+      const schema = this.schemas[row.__schemaIdx];  
+      if (!schema) return;  
+      const schemaColIdx = schema.headers.indexOf(colName);  
+      if (schemaColIdx === -1) return;  
+      row.__data[schemaColIdx] = val;  
+    },  
+
+    /* ════════════════════ 构建行对象 ════════════════════ */  
+
+    _makeRow(cells, schemaIdx, appended) {  
+      const custom = {};  
+      this.customColIndices.forEach(ci => {  
+        custom[this.headers[ci]] = '';  
+      });  
+      return {  
+        __id: this.currentTable ? (++this.currentTable.idCounter) : 0,  
+        __displayIndex: this.rows.length + 1,  
+        __data: cells,  
+        __custom: custom,  
+        __schemaIdx: schemaIdx,  
+        __confirmed: false,  
+        __appended: !!appended,  
+        __isNew: false,  
+      };  
+    },  
+
+    /* ════════════════════ 解析入口 ════════════════════ */  
+
+    startParse() {  
+      if (!this.headInput.trim()) { this.showToast('请先输入或导入列头', 'warning'); return; }  
+      if (!this.valInput.trim())  { this.showToast('请先输入或导入数据', 'warning'); return; }  
+      const headLines = this._parseHeadRaw(this.headInput);  
+      if (!headLines.length) { this.showToast('列头解析失败', 'error'); return; }  
+      const valLines = this.valInput.split('\n').filter(l => this._cleanLine(l) !== '');  
+      this.parsedHeadLines = headLines;  
+      this.parsedValLineCount = valLines.length;  
+      this.confirmedColCount = headLines.length;  
+      this.colCountSchemaName = this.schemas.length === 0 ? 'Format-A' : 'Format-' + String.fromCharCode(65 + this.schemas.length);  
+      this._pendingParseIsAppend = false;  
+      this.showColCountModal = true;  
+    },  
+
+    doConfirmedParse() {  
+      const colCount = this.confirmedColCount;  
+      if (!colCount || colCount < 1) { this.showToast('列数必须≥1', 'error'); return; }  
+      const schemaName = this.colCountSchemaName.trim() || ('Format-' + String.fromCharCode(65 + this.schemas.length));  
+      const heads = this.parsedHeadLines.slice(0, colCount);  
+
+      // 找或创建schema  
+      let schemaIdx = this.schemas.findIndex(s => JSON.stringify(s.headers) === JSON.stringify(heads));  
+      if (schemaIdx === -1 && this.currentTable) {  
+        this.currentTable.schemas.push({ name: schemaName, headers: heads });  
+        schemaIdx = this.schemas.length - 1;  
+      }  
+
+      const records = this._parseValLines(this.valInput, colCount);  
+      if (!records.length) { this.showToast('未解析到有效记录', 'error'); return; }  
+
+      if (!this._pendingParseIsAppend) {  
+        // 首次导入：清空重建当前表  
+        if (this.currentTable) {
+          this.currentTable.rows = []; this.currentTable.idCounter = 0;  
+          this.currentTable.headers = []; this.currentTable.customColIndices = [];  
+          this.currentTable.schemas = [{ name: schemaName, headers: heads }];  
+          schemaIdx = 0;  
+          this._rebuildHeaders();  
+          this.currentTable.editHistory = [];  
+        }
+      } else {  
+        this._rebuildHeaders();  
+      }  
+
+      let added = 0;  
+      records.forEach(cells => {  
+        const row = this._makeRow(cells, schemaIdx, this._pendingParseIsAppend);  
+        row.__displayIndex = this.rows.length + 1;  
+        if (this.currentTable) this.currentTable.rows.push(row);  
+        added++;  
+      });  
+      this._reindex();  
+      this.showColCountModal = false;  
+      this._addHistory('cell', `导入${added}条记录，格式「${schemaName}」`);  
+      this.showToast(`🚀 解析完成：${added}条 × ${colCount}列【${schemaName}】`, 'success');  
+    },  
+
+    /* ── 表格样式解析 ── */  
+    parseTableStyle() {  
+      const raw = this.tableStyleInput.trim();  
+      if (!raw) { this.showToast('请先粘贴或导入表格', 'warning'); return; }  
+      const lines = raw.split('\n').filter(l=>l.trim()!=='');  
+      if (lines.length < 2) { this.showToast('至少需列头+1行数据', 'warning'); return; }  
+      const d = this._getDelimiterChar(raw);  
+      const heads = this._splitLine(lines[0], d);  
+      if (!heads.length) { this.showToast('列头解析失败','error'); return; }  
+      const schemaName = this.schemas.length===0 ? 'Format-A' : 'Format-'+String.fromCharCode(65+this.schemas.length);  
+      const records = lines.slice(1).map(l => {  
+        const c=this._splitLine(l,d);  
+        while(c.length<heads.length) c.push('');  
+        return c.slice(0,heads.length);  
+      });  
+
+      if (this.currentTable) {
+        this.currentTable.rows=[]; this.currentTable.idCounter=0; this.currentTable.headers=[]; this.currentTable.customColIndices=[];  
+        this.currentTable.schemas=[{name:schemaName,headers:heads}];  
+      }
+      this._rebuildHeaders();  
+      if (this.currentTable) this.currentTable.editHistory=[];  
+
+      let added=0;  
+      records.forEach(cells=>{  
+        const row=this._makeRow(cells,0,false);  
+        row.__displayIndex=this.rows.length+1;  
+        if (this.currentTable) this.currentTable.rows.push(row);  
+        added++;  
+      });  
+      this._reindex();  
+      this.showToast(`📊 解析完成：${added}条 × ${heads.length}列`, 'success');  
+    },  
+
+    /* ════════════════════ 行操作 ════════════════════ */  
+
+    confirmRow(row) { row.__confirmed=true; this.showToast('✅ 已确认 #'+row.__displayIndex,'success'); },  
+    revokeRow(row) { row.__confirmed=false; this.showToast('↩️ 已撤销 #'+row.__displayIndex,'warning'); },  
+    confirmAll() {  
+      const t=this.filteredRows.filter(r=>!r.__confirmed);  
+      t.forEach(r=>{r.__confirmed=true;});  
+      this.showToast(`✅ 已确认 ${t.length} 条`,'success');  
+    },  
+    cancelAllConfirm() {  
+      const t=this.filteredRows.filter(r=>r.__confirmed);  
+      t.forEach(r=>{r.__confirmed=false;});  
+      this.showToast(`↩️ 已取消 ${t.length} 条`,'warning');  
+    },  
+    deleteRow(row) {  
+      if (!confirm(`确定删除第 ${row.__displayIndex} 行？`)) return;  
+      const idx=this.rows.findIndex(r=>r.__id===row.__id);  
+      if (idx===-1) return;  
+      const desc=`删除行#${row.__displayIndex}`;  
+      if (this.currentTable) this.currentTable.rows.splice(idx,1);  
+      this._reindex();  
+      this._addHistory('row-del',desc);  
+      this.showToast('🗑️ 已删除行','warning');  
+    },  
+    duplicateRow(row) {  
+      const idx=this.rows.findIndex(r=>r.__id===row.__id);  
+      if (idx===-1) return;  
+      const nr={  
+        __id: this.currentTable ? (++this.currentTable.idCounter) : 0, __displayIndex:0,  
+        __data:[...row.__data], __custom:{...row.__custom},  
+        __schemaIdx:row.__schemaIdx,  
+        __confirmed:false, __appended:false, __isNew:true,  
+      };  
+      if (this.currentTable) this.currentTable.rows.splice(idx+1,0,nr);  
+      this._reindex();  
+      setTimeout(()=>{nr.__isNew=false;},2100);  
+      this._addHistory('cell',`复制行#${row.__displayIndex}`);  
+      this.showToast('📋 已复制行','success');  
+    },  
+    _reindex() { this.rows.forEach((r,i)=>{r.__displayIndex=i+1;}); },  
+
+    /* ════════════════════ 单元格编辑 ════════════════════ */
+
+    startCellEdit(row, ci, tableIndex) {
+      if (tableIndex != null) this.activeTableIndex = tableIndex;
+      this.editingCell = { tableIndex: tableIndex != null ? tableIndex : this.activeTableIndex, rowId: row.__id, ci };
+    },
+
+    stopCellEdit() {
+      this.editingCell = { tableIndex: -1, rowId: null, ci: null };
+    },
+
+    saveCellEdit(row, ci, val) {
+      const old = this.getCellValue(row, ci);
+      if (val !== old) {
+        this.setCellValue(row, ci, val);
+        this._addHistory(
+          'cell',
+          `行#${row.__displayIndex}「${this.headers[ci]}」: `
+          + `${(old  || '(空)').substring(0, 15)}`
+          + ` → `
+          + `${(val  || '(空)').substring(0, 15)}`
+        );
+      }
+      this.stopCellEdit();
+    },
+
+        /* ════════════════════ 列头编辑 ════════════════════ */
+
+    saveHeaderEdit(e, ci) {
+      const val = e.target.value.trim();
+      if (val && val !== this.headers[ci]) {
+        const oldName = this.headers[ci];
+        // 同步更新所有 schema 里的列名
+        this.schemas.forEach(s => {
+          const idx = s.headers.indexOf(oldName);
+          if (idx !== -1) s.headers[idx] = val;
+        });
+        // 更新自定义列的 custom key
+        if (this.customColIndices.includes(ci)) {
+          this.rows.forEach(r => {
+            r.__custom[val] = r.__custom[oldName] || '';
+            delete r.__custom[oldName];
+          });
+        }
+        this.headers[ci] = val;
+        this._addHistory('header', `列头「${oldName}」→「${val}」`);
+        this.showToast(`✏️ 列头已改为「${val}」`, 'info');
+      }
+      this.editingHeaderIdx = -1;
+      this.editingHeaderTableIndex = -1;
+    },
+
+    /* ════════════════════ 列操作 ════════════════════ */
+
+    addCustomColumn() {
+      const name = this.newColName.trim();
+      if (!name) { this.showToast('列名不能为空', 'error'); return; }
+      if (this.headers.includes(name)) { this.showToast('列名已存在', 'error'); return; }
+      if (!this.currentTable) return;
+      const def = this.newColDefault.trim();
+      const pos = this.newColPosition;
+      if (pos === -1 || pos >= this.headers.length) {
+        this.currentTable.headers.push(name);
+        const newIdx = this.currentTable.headers.length - 1;
+        this.currentTable.customColIndices.push(newIdx);
+        this.currentTable.rows.forEach(r => { r.__custom[name] = def; });
+      } else {
+        this.currentTable.headers.splice(pos, 0, name);
+        this.currentTable.customColIndices = this.currentTable.customColIndices.map(i => i >= pos ? i + 1 : i);
+        this.currentTable.customColIndices.push(pos);
+        this.currentTable.rows.forEach(r => { r.__custom[name] = def; });
+      }
+      this._addHistory('cell', `添加自定义列「${name}」`);
+      this.newColName = ''; this.newColDefault = ''; this.newColPosition = -1;
+      this.showAddColModal = false;
+      this.showToast(`➕ 已添加列「${name}」`, 'success');
+    },
+
+    openDelColModal(ci) {
+      this.delColTarget = {
+        ci, name: this.headers[ci],
+        isCustom: this.customColIndices.includes(ci),
+      };
+      this.showDelColModal = true;
+    },
+
+    doDeleteColumn() {
+      const ci = this.delColTarget.ci;
+      const name = this.delColTarget.name;
+      const isCustom = this.delColTarget.isCustom;
+      if (!this.currentTable) return;
+      this.currentTable.headers.splice(ci, 1);
+      this.currentTable.customColIndices = this.currentTable.customColIndices
+        .filter(i => i !== ci)
+        .map(i => i > ci ? i - 1 : i);
+      if (isCustom) {
+        this.currentTable.rows.forEach(r => { delete r.__custom[name]; });
+      } else {
+        this.currentTable.schemas.forEach((s, si) => {
+          const schemaColIdx = s.headers.indexOf(name);
+          if (schemaColIdx !== -1) {
+            s.headers.splice(schemaColIdx, 1);
+            this.currentTable.rows.forEach(r => {
+              if (r.__schemaIdx === si) r.__data.splice(schemaColIdx, 1);
+            });
+          }
+        });
+      }
+      this._addHistory('col-del', `删除列「${name}」`);
+      this.showDelColModal = false;
+      this.showToast(`🗑️ 已删除列「${name}」`, 'warning');
+    },
+
+    /* ════════════════════ 编辑整行弹窗 ════════════════════ */
+
+    openEditRowModal(row) {
+      this.editRowTarget = row;
+      this.editRowData = {};
+      this.headers.forEach((h, ci) => {
+        this.editRowData[ci] = this.getCellValue(row, ci);
+      });
+      this.showEditRowModal = true;
+    },
+
+    saveEditRow() {
+      if (!this.editRowTarget) return;
+      const row = this.editRowTarget;
+      let changes = 0;
+      this.headers.forEach((h, ci) => {
+        const newVal = this.editRowData[ci] !== undefined
+          ? this.editRowData[ci]
+          : this.getCellValue(row, ci);
+        const oldVal = this.getCellValue(row, ci);
+        if (newVal !== oldVal) {
+          this.setCellValue(row, ci, newVal);
+          changes++;
+        }
+      });
+      if (changes > 0) {
+        this._addHistory('cell', `编辑行#${row.__displayIndex}（${changes}项变更）`);
+        this.showToast(`💾 行#${row.__displayIndex} 已保存（${changes}处修改）`, 'success');
+      }
+      this.showEditRowModal = false;
+      this.editRowTarget = null;
+    },
+
+    /* ════════════════════ 右键菜单 ════════════════════ */
+
+    openCtxMenuRow(e, row, ci) {
+      this.ctxMenu = {
+        show: true,
+        x: Math.min(e.clientX, window.innerWidth - 200),
+        y: Math.min(e.clientY, window.innerHeight - 260),
+        row, ci
+      };
+    },
+    openCtxMenuCol(e, ci) {
+      this.ctxMenu = {
+        show: true,
+        x: Math.min(e.clientX, window.innerWidth - 200),
+        y: Math.min(e.clientY, window.innerHeight - 260),
+        row: null, ci
+      };
+    },
+    closeCtxMenu() { this.ctxMenu.show = false; },
+    ctxConfirmRow() {
+      if (!this.ctxMenu.row) return;
+      this.ctxMenu.row.__confirmed
+        ? this.revokeRow(this.ctxMenu.row)
+        : this.confirmRow(this.ctxMenu.row);
+      this.closeCtxMenu();
+    },
+    ctxEditRow() {
+      if (!this.ctxMenu.row) return;
+      this.openEditRowModal(this.ctxMenu.row);
+      this.closeCtxMenu();
+    },
+    ctxDuplicateRow() {
+      if (!this.ctxMenu.row) return;
+      this.duplicateRow(this.ctxMenu.row);
+      this.closeCtxMenu();
+    },
+    ctxDeleteRow() {
+      if (!this.ctxMenu.row) return;
+      this.deleteRow(this.ctxMenu.row);
+      this.closeCtxMenu();
+    },
+    ctxDeleteCol() {
+      if (this.ctxMenu.ci === null) return;
+      this.openDelColModal(this.ctxMenu.ci);
+      this.closeCtxMenu();
+    },
+
+    /* ════════════════════ 追加导入 ════════════════════ */
+
+    _getAppendColCount() {
+      if (this.appendNewSchema) {
+        return this.parsedNewHeadPreview.length;
+      }
+      if (this.appendSchemaIdx >= 0 && this.schemas[this.appendSchemaIdx]) {
+        return this.schemas[this.appendSchemaIdx].headers.length;
+      }
+      return 0;
+    },
+
+    openAppendModal(target) {
+      this.appendTarget = target || 'current';
+      this.appendMode = 'text';
+      this.appendSchemaIdx = this.schemas.length > 0 ? 0 : -1;
+      if (this.appendTarget === 'current') {
+        this.appendNewSchema = false;
+      } else {
+        this.appendNewSchema = true;
+        this.appendNewSchemaName = 'Format-' + String.fromCharCode(65 + this.schemas.length);
+        this.appendNewHeadMode = 'text';
+        this.appendNewHeadInput = '';
+        this.appendNewHeadFileName = '';
+      }
+      this.appendValInput = '';
+      this.appendFileName = '';
+      this.showAppendModal = true;
+    },
+
+    closeAppendModal() {
+      this.showAppendModal = false;
+      this.appendValInput = '';
+      this.appendFileName = '';
+      this.appendNewHeadInput = '';
+      this.appendNewHeadFileName = '';
+    },
+
+    doAppend() {
+      if (!this.appendValInput.trim()) {
+        this.showToast('追加内容不能为空', 'warning'); return;
+      }
+      const colCount = this._getAppendColCount();
+      if (!colCount) {
+        this.showToast('请选择或配置表头格式', 'warning'); return;
+      }
+
+      let schemaIdx;
+      if (this.appendNewSchema) {
+        // 新建 schema
+        const name = this.appendNewSchemaName.trim() ||
+          'Format-' + String.fromCharCode(65 + this.schemas.length);
+        const heads = this.parsedNewHeadPreview;
+        if (!heads.length) { this.showToast('新建表头解析失败', 'error'); return; }
+        // 检查是否与现有 schema 重复
+        const dupIdx = this.schemas.findIndex(
+          s => JSON.stringify(s.headers) === JSON.stringify(heads)
+        );
+        if (dupIdx !== -1) {
+          schemaIdx = dupIdx;
+          this.showToast(`ℹ️ 与「${this.schemas[dupIdx].name}」格式相同，归入已有格式`, 'info');
+        } else {
+          this.currentTable.schemas.push({ name, headers: heads });
+          schemaIdx = this.schemas.length - 1;
+          this._rebuildHeaders();
+        }
+      } else {
+        schemaIdx = this.appendSchemaIdx;
+      }
+
+      const records = this._parseValLines(this.appendValInput, colCount);
+      if (!records.length) { this.showToast('未解析到有效记录', 'error'); return; }
+
+      if (this.appendTarget === 'new') {
+        // 新建表追加：创建独立表，不共享表头和统计
+        const name = (this.appendNewSchemaName || '').trim() || ('表' + this._nextTableId);
+        const heads = this.parsedNewHeadPreview;
+        if (!heads.length) { this.showToast('新建表头解析失败', 'error'); return; }
+        const newTable = {
+          id: this._nextTableId++,
+          name,
+          headers: [...heads],
+          customColIndices: [],
+          schemas: [{ name, headers: [...heads] }],
+          rows: [],
+          idCounter: 0,
+          editHistory: [],
+        };
+        let rid = 0;
+        records.forEach(cells => {
+          const row = {
+            __id: ++rid,
+            __displayIndex: newTable.rows.length + 1,
+            __data: [...cells],
+            __custom: {},
+            __schemaIdx: 0,
+            __confirmed: false,
+            __appended: true,
+            __isNew: true,
+          };
+          newTable.rows.push(row);
+        });
+        newTable.idCounter = rid;
+        this.tables.push(newTable);
+        this._reindex();
+        setTimeout(() => { this.rows.forEach(r => { r.__isNew = false; }); }, 2100);
+        this.closeAppendModal();
+        this.showToast(`✅ 新建表「${name}」并追加 ${records.length} 条`, 'success');
+        return;
+      }
+
+      const startLen = this.rows.length;
+      records.forEach(cells => {
+        const row = this._makeRow(cells, schemaIdx, true);
+        row.__displayIndex = this.rows.length + 1;
+        row.__isNew = true;
+        if (this.currentTable) this.currentTable.rows.push(row);
+      });
+      const added = this.rows.length - startLen;
+      this._reindex();
+      setTimeout(() => { this.rows.forEach(r => { r.__isNew = false; }); }, 2100);
+
+      const sName = this.schemas[schemaIdx].name;
+      this._addHistory('cell', `追加${added}条记录，格式「${sName}」`);
+      this.closeAppendModal();
+      this.showToast(`✅ 追加成功：${added}条【${sName}】`, 'success');
+    },
+
+    /* ════════════════════ 文件读取 ════════════════════ */
+
+    onDropHead(e) {
+      this.headDragOver = false;
+      const file = e.dataTransfer.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.headInput = t; this.headFileName = file.name; this.showToast(`📋 ${file.name}`, 'info'); });
+    },
+    onSelectHeadFile(e) {
+      const file = e.target.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.headInput = t; this.headFileName = file.name; this.showToast(`📋 ${file.name}`, 'info'); });
+      e.target.value = '';
+    },
+    onDropVal(e) {
+      this.valDragOver = false;
+      const file = e.dataTransfer.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.valInput = t; this.valFileName = file.name; this.showToast(`📄 ${file.name}`, 'info'); });
+    },
+    onSelectValFile(e) {
+      const file = e.target.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.valInput = t; this.valFileName = file.name; this.showToast(`📄 ${file.name}`, 'info'); });
+      e.target.value = '';
+    },
+    onDropTableStyle(e) {
+      this.tableStyleDragOver = false;
+      const file = e.dataTransfer.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.tableStyleInput = t; this.tableStyleFileName = file.name; this.showToast(`📊 ${file.name}`, 'info'); });
+    },
+    onSelectTableStyleFile(e) {
+      const file = e.target.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.tableStyleInput = t; this.tableStyleFileName = file.name; this.showToast(`📊 ${file.name}`, 'info'); });
+      e.target.value = '';
+    },
+    onDropAppend(e) {
+      this.appendDragOver = false;
+      const file = e.dataTransfer.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.appendValInput = t; this.appendFileName = file.name; this.showToast(`📄 ${file.name}`, 'info'); });
+    },
+    onSelectAppendFile(e) {
+      const file = e.target.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.appendValInput = t; this.appendFileName = file.name; this.showToast(`📄 ${file.name}`, 'info'); });
+      e.target.value = '';
+    },
+    onDropAppendNewHead(e) {
+      this.appendNewHeadDragOver = false;
+      const file = e.dataTransfer.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.appendNewHeadInput = t; this.appendNewHeadFileName = file.name; this.showToast(`📋 ${file.name}`, 'info'); });
+    },
+    onSelectAppendNewHeadFile(e) {
+      const file = e.target.files[0]; if (!file) return;
+      this._readTxt(file, t => { this.appendNewHeadInput = t; this.appendNewHeadFileName = file.name; this.showToast(`📋 ${file.name}`, 'info'); });
+      e.target.value = '';
+    },
+    _readTxt(file, cb) {
+      const reader = new FileReader();
+      reader.onload = ev => cb(ev.target.result);
+      reader.onerror = () => this.showToast('文件读取失败', 'error');
+      reader.readAsText(file, 'UTF-8');
+    },
+
+    /* ════════════════════ 导出设置 ════════════════════ */
+
+    initExportSchemaFilter() {
+      this.exportSchemaFilter = this.schemas.map((_, i) => i);
+    },
+    toggleExportSchema(si) {
+      const idx = this.exportSchemaFilter.indexOf(si);
+      if (idx === -1) this.exportSchemaFilter.push(si);
+      else this.exportSchemaFilter.splice(idx, 1);
+    },
+
+    /* ════════════════════ 导出 HTML ════════════════════ */
+
+    doExport() {
+      this.showExportModal = false;
+      let exportRows = this.rows.filter(r => {
+        if (this.exportOnlyConfirmed && !r.__confirmed) return false;
+        if (this.exportSchemaFilter.length > 0 &&
+            !this.exportSchemaFilter.includes(r.__schemaIdx)) return false;
+        return true;
+      });
+      if (!exportRows.length) { this.showToast('没有可导出的记录', 'warning'); return; }
+
+      const exportHeaders = this.exportShowCustom
+        ? this.headers
+        : this.headers.filter((_, ci) => !this.customColIndices.includes(ci));
+
+      const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const now = new Date().toLocaleString('zh-CN');
+      const confirmedCnt = exportRows.filter(r => r.__confirmed).length;
+      const pct = exportRows.length ? Math.round(confirmedCnt / exportRows.length * 100) : 0;
+
+      // 按格式分组统计
+      const schemaStats = this.schemas.map((s, si) => ({
+        name: s.name,
+        total: exportRows.filter(r => r.__schemaIdx === si).length,
+        confirmed: exportRows.filter(r => r.__schemaIdx === si && r.__confirmed).length,
+        color: this.getSchemaColor(si),
+      })).filter(s => s.total > 0);
+
+      const schemaStatsHtml = schemaStats.map(s => `
+        <div class="stat">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+            <span style="width:8px;height:8px;border-radius:50%;background:${s.color};display:inline-block;"></span>
+            <span style="font-size:11px;color:#94a3b8;">${esc(s.name)}</span>
+          </div>
+          <strong style="font-size:18px;font-weight:800;color:white;">${s.total}</strong>
+          <div style="font-size:10px;color:#94a3b8;">✅ ${s.confirmed} / ⏳ ${s.total - s.confirmed}</div>
+        </div>`).join('');
+
+      const thHtml = '<th>#</th><th>格式</th>' +
+        exportHeaders.map(h => `<th>${esc(h)}</th>`).join('') +
+        '<th>状态</th>';
+
+      const tbodyHtml = exportRows.map((row, i) => {
+        const schema = this.schemas[row.__schemaIdx];
+        const schemaColor = this.getSchemaColor(row.__schemaIdx);
+        const schemaTag = schema
+          ? `<span style="background:${schemaColor}22;color:${schemaColor};border:1px solid ${schemaColor}44;
+              font-size:9px;padding:2px 7px;border-radius:8px;font-weight:700;">${esc(schema.name)}</span>`
+          : '';
+        const badge = row.__confirmed
+          ? '<span style="background:#059669;color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">✓ 已确认</span>'
+          : '<span style="background:rgba(71,85,105,0.6);color:#cbd5e1;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">待确认</span>';
+        const cells = exportHeaders.map((h, hi) => {
+          const ci = this.headers.indexOf(h);
+          return `<td>${esc(this.getCellValue(row, ci))}</td>`;
+        }).join('');
+        const rs = row.__confirmed
+          ? 'style="background:rgba(5,150,105,0.08);border-left:3px solid #059669;"'
+          : '';
+        return `<tr ${rs}>
+          <td style="text-align:center;color:#94a3b8;font-size:12px;">${i + 1}</td>
+          <td style="text-align:center;">${schemaTag}</td>
+          ${cells}
+          <td style="text-align:center;">${badge}</td>
+        </tr>`;
+      }).join('\n');
+
+      const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>导出报告 - ${now}</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f172a;color:#cbd5e1;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:40px 20px;line-height:1.6}
+.report-wrap{max-width:1412px;margin:0 auto;padding:0 16px}
+h1{font-size:24px;font-weight:800;margin-bottom:8px;background:linear-gradient(90deg,#818cf8,#38bdf8,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+.meta{font-size:14px;color:#94a3b8;margin-bottom:24px}.meta span{color:#cbd5e1;font-weight:600}
+.stats{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
+.stat{background:rgba(30,41,59,0.8);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px 18px;font-size:13px;min-width:100px}
+.stat strong{font-size:20px;font-weight:800;display:block}.stat .lbl{color:#94a3b8;font-size:11px}
+.schema-section{margin-bottom:24px}
+.schema-title{font-size:13px;color:#94a3b8;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.schema-grid{display:flex;gap:10px;flex-wrap:wrap}
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(99,102,241,0.2);margin-bottom:24px}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:14px}
+thead th{background:#1e1b4b;color:#a5b4fc;font-size:12px;font-weight:700;padding:10px 12px;text-align:left;
+  white-space:nowrap;border-bottom:2px solid rgba(129,140,248,0.4);text-transform:uppercase;letter-spacing:.04em}
+tbody td{padding:10px 12px;font-size:14px;line-height:1.5;border-bottom:1px solid rgba(255,255,255,0.05);
+  background:rgba(15,23,42,0.5);vertical-align:middle}
+tbody tr:nth-child(even) td{background:rgba(30,41,59,0.5)}
+tbody tr:hover td{background:rgba(99,102,241,0.08)!important}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#1e293b}
+::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
+footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
+</style>
+</head>
+<body>
+<div class="report-wrap">
+<h1>📋 表格内容确认报告</h1>
+<div class="meta">导出时间：<span>${now}</span></div>
+<div class="stats">
+  <div class="stat"><strong style="color:#e2e8f0">${exportRows.length}</strong><div class="lbl">导出总数</div></div>
+  <div class="stat"><strong style="color:#34d399">${confirmedCnt}</strong><div class="lbl">已确认</div></div>
+  <div class="stat"><strong style="color:#fbbf24">${exportRows.length - confirmedCnt}</strong><div class="lbl">未确认</div></div>
+  <div class="stat"><strong style="color:#818cf8">${pct}%</strong><div class="lbl">确认率</div></div>
+  <div class="stat"><strong style="color:#38bdf8">${exportHeaders.length}</strong><div class="lbl">列数</div></div>
+</div>
+${schemaStats.length > 1 ? `
+<div class="schema-section">
+  <div class="schema-title">📐 表头格式分布</div>
+  <div class="schema-grid">${schemaStatsHtml}</div>
+</div>` : ''}
+<div class="tbl-wrap">
+<table>
+<thead><tr>${thHtml}</tr></thead>
+<tbody>${tbodyHtml}</tbody>
+</table>
+</div>
+<footer>由「表格内容确认工具 v3」生成 · ${now}</footer>
+</div>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `table-export-${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showToast(`📤 导出成功！${exportRows.length}条 × ${exportHeaders.length}列`, 'success');
+    },
+
+    /* ════════════════════ 导出所有表格 ════════════════════ */
+    doExportAllTables() {
+      const tablesWithData = this.tables.filter(t => t.rows && t.rows.length > 0);
+      if (!tablesWithData.length) {
+        this.showToast('没有可导出的表格', 'warning');
+        return;
+      }
+      const esc = s => String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+      const now = new Date().toLocaleString('zh-CN');
+      const reportStyles = `
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0f172a;color:#cbd5e1;font-family:'Segoe UI',system-ui,sans-serif;min-height:100vh;padding:40px 20px;line-height:1.6}
+.report-wrap{max-width:1412px;margin:0 auto;padding:0 16px}
+h1{font-size:24px;font-weight:800;margin-bottom:8px;background:linear-gradient(90deg,#818cf8,#38bdf8,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+h2{font-size:18px;font-weight:700;color:#a5b4fc;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(99,102,241,0.3);}
+.meta{font-size:14px;color:#94a3b8;margin-bottom:24px}.meta span{color:#cbd5e1;font-weight:600}
+.stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
+.stat{background:rgba(30,41,59,0.8);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px 18px;font-size:13px;min-width:100px}
+.stat strong{font-size:20px;font-weight:800;display:block}.stat .lbl{color:#94a3b8;font-size:11px}
+.tbl-wrap{overflow-x:auto;border-radius:12px;border:1px solid rgba(99,102,241,0.2);margin-bottom:24px}
+table{border-collapse:collapse;width:100%;min-width:600px;font-size:14px}
+thead th{background:#1e1b4b;color:#a5b4fc;font-size:12px;font-weight:700;padding:10px 12px;text-align:left;
+  white-space:nowrap;border-bottom:2px solid rgba(129,140,248,0.4);text-transform:uppercase;letter-spacing:.04em}
+tbody td{padding:10px 12px;font-size:14px;line-height:1.5;border-bottom:1px solid rgba(255,255,255,0.05);
+  background:rgba(15,23,42,0.5);vertical-align:middle}
+tbody tr:nth-child(even) td{background:rgba(30,41,59,0.5)}
+tbody tr:hover td{background:rgba(99,102,241,0.08)!important}
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:#1e293b}
+::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
+footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
+`;
+      const sections = tablesWithData.map((t, tableIdx) => {
+        const exportHeaders = t.headers || [];
+        const exportRows = t.rows || [];
+        const confirmedCnt = exportRows.filter(r => r.__confirmed).length;
+        const pct = exportRows.length ? Math.round(confirmedCnt / exportRows.length * 100) : 0;
+        const thHtml = '<th>#</th><th>格式</th>' +
+          exportHeaders.map(h => `<th>${esc(h)}</th>`).join('') +
+          '<th>状态</th>';
+        const tbodyHtml = exportRows.map((row, i) => {
+          const schema = (t.schemas || [])[row.__schemaIdx];
+          const schemaColor = this.getSchemaColor(row.__schemaIdx);
+          const schemaTag = schema
+            ? `<span style="background:${schemaColor}22;color:${schemaColor};border:1px solid ${schemaColor}44;
+                font-size:9px;padding:2px 7px;border-radius:8px;font-weight:700;">${esc(schema.name)}</span>`
+            : '';
+          const badge = row.__confirmed
+            ? '<span style="background:#059669;color:white;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">✓ 已确认</span>'
+            : '<span style="background:rgba(71,85,105,0.6);color:#cbd5e1;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">待确认</span>';
+          const cells = exportHeaders.map((h, hi) => {
+            const cellVal = this.getCellValueForTable(row, hi, t);
+            return `<td>${esc(cellVal)}</td>`;
+          }).join('');
+          const rs = row.__confirmed
+            ? 'style="background:rgba(5,150,105,0.08);border-left:3px solid #059669;"'
+            : '';
+          return `<tr ${rs}>
+            <td style="text-align:center;color:#94a3b8;font-size:12px;">${i + 1}</td>
+            <td style="text-align:center;">${schemaTag}</td>
+            ${cells}
+            <td style="text-align:center;">${badge}</td>
+          </tr>`;
+        }).join('\n');
+        const statsHtml = `
+  <div class="stats">
+    <div class="stat"><strong style="color:#e2e8f0">${exportRows.length}</strong><div class="lbl">总记录</div></div>
+    <div class="stat"><strong style="color:#34d399">${confirmedCnt}</strong><div class="lbl">已确认</div></div>
+    <div class="stat"><strong style="color:#fbbf24">${exportRows.length - confirmedCnt}</strong><div class="lbl">未确认</div></div>
+    <div class="stat"><strong style="color:#818cf8">${pct}%</strong><div class="lbl">确认率</div></div>
+    <div class="stat"><strong style="color:#38bdf8">${exportHeaders.length}</strong><div class="lbl">列数</div></div>
+  </div>`;
+        return `
+<section>
+  <h2>${tableIdx + 1}. ${esc(t.name)}</h2>
+  ${statsHtml}
+  <div class="tbl-wrap">
+    <table>
+      <thead><tr>${thHtml}</tr></thead>
+      <tbody>${tbodyHtml}</tbody>
+    </table>
+  </div>
+</section>`;
+      }).join('\n');
+
+      const totalRows = tablesWithData.reduce((sum, t) => sum + (t.rows || []).length, 0);
+      const html = `<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>${esc(this.exportReportTitle || '表格内容确认报告（全部）')} - ${now}</title>
+<style>${reportStyles}</style>
+</head>
+<body>
+<div class="report-wrap">
+<h1>📋 ${esc(this.exportReportTitle || '表格内容确认报告（全部）')}</h1>
+<div class="meta">导出时间：<span>${now}</span> · 共 <strong>${tablesWithData.length}</strong> 个表 · 合计 <strong>${totalRows}</strong> 条记录</div>
+${sections}
+<footer>由「表格内容确认工具 v3」生成 · 导出所有表格 · ${now}</footer>
+</div>
+</body>
+</html>`;
+
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `table-export-all-${Date.now()}.html`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      this.showToast(`📤 已导出所有表格：${tablesWithData.length} 个表，共 ${totalRows} 条`, 'success');
+    },
+
+    /* ════════════════════ 示例数据 ════════════════════ */
+
+    loadSampleData() {
+      this.headInput =
+`Address
+Name
+Copies Number
+Short Description
+Reset On
+For De`;
+      this.valInput =
+`0x170
+CFG_RLM
+1
+RLM config include EN
+grst
+[0:22](RW)
+0x171
+CFG_RLM_FAULT_SDS_LANE
+1
+The lane number of the Serdes problem
+grst
+[0:15](RW)
+0x172
+CFG_RLM_LANE_SWAP
+1
+serdes lane swap
+grst
+[0:47](RW)
+0x173
+CFG_RLM_AM_PERIOD
+1
+RLM AM PERIOD
+grst
+[0:3](RW)
+0x174
+CFG_RLM_SDS_TX_VLD
+1
+The duration of serdes tx vld
+grst
+[0:9](RW)`;
+      this.importTab = 'manual';
+      this.showToast('📂 示例数据已载入，点击「解析」按钮', 'info');
+    },
+
+    /* ════════════════════ 当前修改导出/导入 ════════════════════ */
+
+    exportModifications() {
+      if (!this.rows.length) { this.showToast('当前没有数据可导出', 'warning'); return; }
+      const snapshot = {
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        headers: [...this.headers],
+        customColIndices: [...this.customColIndices],
+        schemas: this.schemas.map(s => ({ name: s.name, headers: [...s.headers] })),
+        rows: this.rows.map(r => ({
+          __id: r.__id,
+          __displayIndex: r.__displayIndex,
+          __data: [...(r.__data || [])],
+          __custom: { ...(r.__custom || {}) },
+          __schemaIdx: r.__schemaIdx,
+          __confirmed: !!r.__confirmed,
+          __appended: !!r.__appended,
+        })),
+        idCounter: this.idCounter,
+        editHistory: (this.editHistory || []).slice(-100),
+      };
+      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `tablecheck-modifications-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
+      this.showToast(`💾 已导出当前修改（${this.rows.length} 条）`, 'success');
+    },
+
+    exportAllModifications() {
+      const tablesWithData = this.tables.filter(t => t.rows && t.rows.length > 0);
+      if (!tablesWithData.length) {
+        this.showToast('没有可导出的表项', 'warning');
+        return;
+      }
+      const snapshot = {
+        version: 2,
+        exportedAt: new Date().toISOString(),
+        tables: this.tables.map(t => ({
+          id: t.id,
+          name: t.name || ('表' + t.id),
+          headers: [...(t.headers || [])],
+          customColIndices: [...(t.customColIndices || [])],
+          schemas: (t.schemas || []).map(s => ({ name: s.name, headers: [...(s.headers || [])] })),
+          rows: (t.rows || []).map(r => ({
+            __id: r.__id,
+            __displayIndex: r.__displayIndex,
+            __data: [...(r.__data || [])],
+            __custom: { ...(r.__custom || {}) },
+            __schemaIdx: r.__schemaIdx,
+            __confirmed: !!r.__confirmed,
+            __appended: !!r.__appended,
+          })),
+          idCounter: t.idCounter != null ? t.idCounter : 0,
+          editHistory: ((t.editHistory || []).slice(-100)),
+        })),
+        _nextTableId: this._nextTableId,
+      };
+      const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `tablecheck-all-modifications-${Date.now()}.json`;
+      document.body.appendChild(a);
+      a.click();
+      URL.revokeObjectURL(a.href);
+      document.body.removeChild(a);
+      const totalRows = tablesWithData.reduce((sum, t) => sum + (t.rows || []).length, 0);
+      this.showToast(`💾 已导出所有修改：${this.tables.length} 个表，共 ${totalRows} 条`, 'success');
+    },
+
+    doImportModifications(ev) {
+      const file = ev.target && ev.target.files && ev.target.files[0];
+      if (!file) return;
+      ev.target.value = '';
+      const reader = new FileReader();
+      reader.onload = () => {
+        try {
+          const data = JSON.parse(reader.result);
+          if (data == null || typeof data !== 'object') throw new Error('无效的 JSON');
+          if (data.version !== 1 || !Array.isArray(data.headers) || !Array.isArray(data.rows) || !Array.isArray(data.schemas)) {
+            throw new Error('不支持的格式或缺少必要字段（version, headers, rows, schemas）');
+          }
+          if (!this.tables.length) { this.tables = [{ id: this._nextTableId++, name: '表1', headers: [], customColIndices: [], schemas: [], rows: [], idCounter: 0, editHistory: [] }]; this.activeTableIndex = 0; }
+          const cur = this.currentTable;
+          if (!cur) return;
+          cur.headers = data.headers || [];
+          cur.customColIndices = Array.isArray(data.customColIndices) ? data.customColIndices : [];
+          cur.schemas = (data.schemas || []).map(s => ({ name: s.name || '', headers: [...(s.headers || [])] }));
+          let nextId = 1;
+          cur.rows = (data.rows || []).map(r => {
+            const id = r.__id != null && r.__id > 0 ? r.__id : nextId++;
+            return {
+              __id: id,
+              __displayIndex: r.__displayIndex != null ? r.__displayIndex : 0,
+              __data: Array.isArray(r.__data) ? r.__data : [],
+              __custom: r.__custom && typeof r.__custom === 'object' ? { ...r.__custom } : {},
+              __schemaIdx: typeof r.__schemaIdx === 'number' ? Math.max(0, r.__schemaIdx) : 0,
+              __confirmed: !!r.__confirmed,
+              __appended: !!r.__appended,
+              __isNew: false,
+            };
+          });
+          const maxId = cur.rows.length ? Math.max(...cur.rows.map(r => r.__id)) : 0;
+          cur.idCounter = typeof data.idCounter === 'number' ? Math.max(data.idCounter, maxId) : maxId;
+          cur.editHistory = Array.isArray(data.editHistory) ? data.editHistory : [];
+          this._reindex();
+          this.searchText = '';
+          this.filterMode = 'all';
+          this.editingCell = { rowId: null, ci: null };
+          this.editingHeaderIdx = -1;
+      this.editingHeaderTableIndex = -1;
+          this.showEditRowModal = false;
+          this.editRowTarget = null;
+          this.showToast(`📂 已导入历史数据：${this.rows.length} 条，可继续编辑`, 'success');
+        } catch (e) {
+          this.showToast('导入失败：' + (e.message || '文件格式错误'), 'error');
+        }
+      };
+      reader.readAsText(file, 'UTF-8');
+    },
+
+    /* ════════════════════ 清空重置 ════════════════════ */
+
+    clearTableByIndex(ti) {
+      const t = this.tables[ti];
+      if (!t || !t.rows.length) return;
+      if (!confirm('确定清空「'+t.name+'」的数据？')) return;
+      t.headers = []; t.customColIndices = []; t.schemas = []; t.rows = []; t.idCounter = 0; t.editHistory = [];
+      this.showToast('🗑️ 已清空「'+t.name+'」', 'warning');
+    },
+    clearAll() {
+      if (this.rows.length > 0 && !confirm('确定清空当前表数据？')) return;
+      this.headInput = ''; this.valInput = '';
+      this.tableStyleInput = '';
+      this.headFileName = ''; this.valFileName = ''; this.tableStyleFileName = '';
+      this.appendValInput = ''; this.appendFileName = '';
+      if (this.currentTable) {
+        this.currentTable.headers = []; this.currentTable.customColIndices = [];
+        this.currentTable.schemas = []; this.currentTable.rows = []; this.currentTable.idCounter = 0;
+        this.currentTable.editHistory = [];
+      }
+      this.searchText = ''; this.filterMode = 'all';
+      this.editingCell = { rowId: null, ci: null };
+      this.editingHeaderIdx = -1;
+      this.editingHeaderTableIndex = -1;
+      this.parsedHeadLines = []; this.parsedValLineCount = 0;
+      this.showToast('🗑️ 已清空当前表数据', 'warning');
+    },
+
+    /* ════════════════════ Toast ════════════════════ */
+
+    showToast(msg, type = 'info') {
+      if (this._toastTimer) clearTimeout(this._toastTimer);
+      this.toast = { show: true, msg, type };
+      this._toastTimer = setTimeout(() => { this.toast.show = false; }, 3200);
+    },
+
+  }; // end return
+} // end tableApp
+</script>
+</body>
+</html>
+
