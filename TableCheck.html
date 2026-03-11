@@ -4,7 +4,10 @@
   <meta charset="UTF-8" />  
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />  
   <title>表格内容确认工具 v3</title>  
-  <link rel="stylesheet" href="tailwind.css" />  
+  <link rel="preload" href="tailwind.css" as="style" />  
+  <link rel="preload" href="alpine.min.js" as="script" />  
+  <link rel="stylesheet" href="tailwind.css" media="print" onload="this.media='all'" />  
+  <noscript><link rel="stylesheet" href="tailwind.css" /></noscript>  
   <script src="alpine.min.js" defer></script>  
   <style>  
     [x-cloak] { display: none !important; }  
@@ -79,7 +82,7 @@
     .tab-inactive:hover { color:#a5b4fc; border-color:rgba(129,140,248,0.4); }  
 
     /* ── 表格 ── */  
-    .table-container { overflow-x:auto; overflow-y:auto; max-height:580px; border-radius:12px; border:1px solid rgba(99,102,241,0.2); }  
+    .table-container { overflow-x:auto; overflow-y:auto; max-height:580px; border-radius:12px; border:1px solid rgba(99,102,241,0.2); content-visibility:auto; contain-intrinsic-size:auto 400px; }  
     table { border-collapse:separate; border-spacing:0; width:100%; min-width:900px; }  
     thead { position:sticky; top:0; z-index:20; }  
     thead th {  
@@ -159,7 +162,10 @@
     .section-label { color:#94a3b8; font-size:11px; text-transform:uppercase; letter-spacing:.1em; font-weight:700; margin-bottom:6px; display:block; }  
     .search-input { background:rgba(15,23,42,0.7); border:1px solid rgba(99,102,241,0.3); color:#e2e8f0; border-radius:8px; padding:8px 14px 8px 36px; font-size:13px; transition:all .3s; }  
     .search-input:focus { outline:none; border-color:#818cf8; box-shadow:0 0 0 3px rgba(129,140,248,0.15); }  
-    .search-input::placeholder { color:#94a3b8; }  
+    .search-input::placeholder { color:#94a3b8; }
+    .tab-edit-input { background:#1e293b !important; color:#e2e8f0 !important; border:1px solid rgba(99,102,241,0.5); }
+    .tab-edit-input::placeholder { color:#94a3b8; }
+    .tab-edit-input:focus { outline:none; box-shadow:0 0 0 2px rgba(129,140,248,0.4); }  
 
     .modal-overlay { position:fixed; inset:0; background:rgba(0,0,0,0.75); backdrop-filter:blur(6px); z-index:200; display:flex; align-items:center; justify-content:center; padding:16px; }  
     .modal-box { background:linear-gradient(135deg,#1e293b,#0f172a); border:1px solid rgba(129,140,248,0.3); border-radius:16px; padding:28px 32px; width:100%; box-shadow:0 20px 60px rgba(0,0,0,0.6); max-height:90vh; overflow-y:auto; }  
@@ -228,7 +234,8 @@
   </div>  
 
   <!-- ══════ 弹窗：添加自定义列 ══════ -->  
-  <div class="modal-overlay" x-show="showAddColModal" @click.self="showAddColModal=false" style="display:none;">  
+  <template x-if="showAddColModal">  
+  <div class="modal-overlay" @click.self="showAddColModal=false">  
     <div class="modal-box" style="max-width:460px;">  
       <h3 class="text-lg font-bold text-indigo-300 mb-5">➕ 添加自定义列</h3>  
       <div class="mb-4">  
@@ -253,9 +260,11 @@
       </div>  
     </div>  
   </div>  
+  </template>  
 
   <!-- ══════ 弹窗：删除列确认 ══════ -->  
-  <div class="modal-overlay" x-show="showDelColModal" @click.self="showDelColModal=false" style="display:none;">  
+  <template x-if="showDelColModal">  
+  <div class="modal-overlay" @click.self="showDelColModal=false">  
     <div class="modal-box" style="max-width:500px;">  
       <h3 class="text-lg font-bold text-red-400 mb-4">🗑️ 删除列确认</h3>  
       <div class="del-col-preview mb-4">  
@@ -282,9 +291,11 @@
       </div>  
     </div>  
   </div>  
+  </template>  
 
   <!-- ══════ 弹窗：导出设置 ══════ -->  
-  <div class="modal-overlay" x-show="showExportModal" @click.self="showExportModal=false" style="display:none;">  
+  <template x-if="showExportModal">  
+  <div class="modal-overlay" @click.self="showExportModal=false">  
     <div class="modal-box" style="max-width:520px;">  
       <h3 class="text-lg font-bold text-emerald-300 mb-4">📤 导出设置</h3>  
       <div class="stat-card mb-5">  
@@ -327,9 +338,11 @@
       </div>  
     </div>  
   </div>  
+  </template>  
 
   <!-- ══════ 弹窗：在当前表追加 ══════ -->  
-  <div class="modal-overlay" x-show="showAppendModal && appendTarget==='current'" @click.self="closeAppendModal()" style="display:none;">  
+  <template x-if="showAppendModal && appendTarget==='current'">  
+  <div class="modal-overlay" @click.self="closeAppendModal()">  
     <div class="modal-box" style="max-width:720px;">  
       <div class="flex items-center justify-between mb-1">  
         <h3 class="text-lg font-bold text-amber-300">📎 在当前表追加</h3>  
@@ -387,9 +400,11 @@
       </div>  
     </div>  
   </div>  
+  </template>  
 
   <!-- ══════ 弹窗：新建表追加 ══════ -->  
-  <div class="modal-overlay" x-show="showAppendModal && appendTarget==='new'" @click.self="closeAppendModal()" style="display:none;">  
+  <template x-if="showAppendModal && appendTarget==='new'">  
+  <div class="modal-overlay" @click.self="closeAppendModal()">  
     <div class="modal-box" style="max-width:720px;">  
       <div class="flex items-center justify-between mb-1">  
         <h3 class="text-lg font-bold text-cyan-300">📋 新建表追加</h3>  
@@ -406,16 +421,17 @@
           </div>  
           <div>  
             <span class="section-label">表头来源</span>  
-            <div class="flex gap-2">  
+            <div class="flex flex-wrap gap-2 items-center">  
               <button @click="appendNewHeadMode='text'" class="tab-btn text-xs px-3 py-1"  
                 :class="appendNewHeadMode==='text'?'tab-active-cyan':'tab-inactive'">✏️ 文本</button>  
               <button @click="appendNewHeadMode='file'" class="tab-btn text-xs px-3 py-1"  
                 :class="appendNewHeadMode==='file'?'tab-active-cyan':'tab-inactive'">📁 文件</button>  
+              <button @click="applyDefaultNewHead()" class="text-xs px-3 py-1.5 rounded-lg font-semibold transition-all border border-cyan-500/50 text-cyan-300 hover:bg-cyan-500/20" title="填入默认表头：Name, Bits, Permission 等">📋 默认表头</button>  
             </div>  
           </div>  
         </div>  
         <div x-show="appendNewHeadMode==='text'" class="mt-3">  
-          <textarea x-model="appendNewHeadInput" class="input-area-cyan w-full rounded-xl px-4 py-3 text-sm font-mono" rows="5" placeholder="每行一个列名..."></textarea>  
+          <textarea x-model="appendNewHeadInput" class="input-area-cyan w-full rounded-xl px-4 py-3 text-sm font-mono" rows="5" placeholder="每行一个列名，或点击「默认表头」填入预设列名"></textarea>  
         </div>  
         <div x-show="appendNewHeadMode==='file'" class="mt-3">  
           <div class="drop-zone-cyan p-5 text-center" :class="appendNewHeadDragOver?'drag-over':''"  
@@ -462,9 +478,11 @@
       </div>  
     </div>  
   </div>  
+  </template>  
 
   <!-- ══════ 弹窗：编辑整行 ══════ -->  
-  <div class="modal-overlay" x-show="showEditRowModal" @click.self="showEditRowModal=false" style="display:none;">  
+  <template x-if="showEditRowModal">  
+  <div class="modal-overlay" @click.self="showEditRowModal=false">  
     <div class="modal-box" style="max-width:640px;">  
       <h3 class="text-lg font-bold text-indigo-300 mb-4">✏️ 编辑行 #<span x-text="editRowTarget?editRowTarget.__displayIndex:''"></span></h3>  
       <div class="flex flex-col gap-3 mb-5">  
@@ -483,9 +501,11 @@
       </div>  
     </div>  
   </div>  
+  </template>  
 
   <!-- ══════ 弹窗：列数确认（首次解析时弹出） ══════ -->  
-  <div class="modal-overlay" x-show="showColCountModal" @click.self="showColCountModal=false" style="display:none;">  
+  <template x-if="showColCountModal">  
+  <div class="modal-overlay" @click.self="showColCountModal=false">  
     <div class="modal-box" style="max-width:520px;">  
       <h3 class="text-lg font-bold text-cyan-300 mb-4">🔢 确认列数</h3>  
       <div class="info-bar-cyan mb-4 text-xs">  
@@ -523,6 +543,7 @@
       </div>  
     </div>  
   </div>  
+  </template>  
 
   <!-- ══════════════════════════════════════════  
        主体  
@@ -539,6 +560,7 @@
         <div class="bar" style="background:#818cf8;"></div>  
         <span class="text-indigo-300 font-bold text-[15px]">数据导入</span>  
         <button type="button" @click="$refs.importModificationsInputInit&&$refs.importModificationsInputInit.click()" class="btn-rose text-white text-sm font-bold px-4 py-2 rounded-xl ml-auto" title="从之前导出的 JSON 文件恢复数据继续编辑">📂 导入历史数据</button>  
+        <button x-show="undoSnapshot !== null" @click="undoLastImport()" class="btn-warning text-white text-sm font-bold px-4 py-2 rounded-xl" title="恢复到本次导入前的状态">↩️ 撤消上一步</button>  
         <input type="file" accept=".json,application/json" x-ref="importModificationsInputInit" @change="doImportModifications($event)" style="display:none">  
         <span x-show="rows.length>0" class="text-xs text-slate-400">已有 <span class="text-indigo-300 font-bold" x-text="rows.length"></span> 条</span>  
       </div>  
@@ -632,6 +654,24 @@
       </div>  
     </div>  
 
+    <!-- ═══ 导出报告备注（与数据导入模块同风格，主页面默认显示） ═══ -->  
+    <div class="glass-card rounded-2xl p-6 mb-6">  
+      <div class="section-title mb-4">  
+        <div class="bar" style="background:#34d399;"></div>  
+        <span class="text-emerald-300 font-bold text-[15px]">导出报告备注</span>  
+        <span class="ml-2 text-xs text-slate-400">导出 HTML 时显示在报告中</span>  
+      </div>  
+      <div class="mb-4">  
+        <span class="section-label mb-2">报告标题</span>  
+        <input type="text" x-model="exportReportTitle" placeholder="表格内容确认报告（全部）" class="input-area w-full rounded-xl px-4 py-3 text-sm"/>  
+      </div>  
+      <div>  
+        <span class="section-label mb-2">备注</span>  
+        <textarea x-model="exportRemark" class="input-area w-full rounded-xl px-4 py-3 text-sm font-mono" rows="8"  
+          placeholder="可选。多行备注将显示在导出 HTML 报告的标题下方，支持换行。"></textarea>  
+      </div>  
+    </div>  
+
     <!-- ═══ 有数据时显示（每个表独立一块，新建表追加后新表出现在下方） ═══ -->  
     <div x-show="tables.some(t=>t.rows.length>0)" style="display:none;">  
 
@@ -647,53 +687,126 @@
           <button @click="filterMode='pending'" class="tab-btn text-xs px-3 py-1.5" :class="filterMode==='pending'?'tab-active-indigo':'tab-inactive'">未确认</button>  
           <button @click="filterMode='appended'" class="tab-btn text-xs px-3 py-1.5" :class="filterMode==='appended'?'tab-active-amber':'tab-inactive'">追加行</button>  
         </div>  
-        <div class="flex items-center gap-2 flex-shrink-0" title="导出所有表格时使用的 HTML 报告标题">  
-          <span class="text-slate-400 text-xs whitespace-nowrap">报告标题</span>  
-          <input type="text" x-model="exportReportTitle" placeholder="表格内容确认报告（全部）" class="search-input text-sm" style="width:220px;"/>  
-        </div>  
         <button @click="exportAllModifications()" class="btn-purple text-white text-sm font-bold px-4 py-2 rounded-xl whitespace-nowrap" title="将所有表的修改导出为一份 JSON">💾 导出所有修改</button>  
         <button @click="doExportAllTables()" class="btn-success text-white text-sm font-bold px-4 py-2 rounded-xl whitespace-nowrap" title="将所有表格合并导出为一份 HTML 报告">📤 导出所有表格</button>  
+        <button x-show="undoSnapshot !== null" @click="undoLastImport()" class="btn-warning text-white text-sm font-bold px-4 py-2 rounded-xl whitespace-nowrap" title="恢复到本次导入前的状态">↩️ 撤消上一步</button>  
       </div>  
       <input type="file" accept=".json,application/json" x-ref="importModificationsInputMulti" @change="doImportModifications($event)" style="display:none">  
 
-      <template x-for="(t, ti) in tables" :key="'table'+t.id">  
-        <div x-show="t.rows.length>0" class="mb-10 pb-10 border-b border-slate-700/40 last:border-b-0 last:pb-0">  
-          <div class="section-title mb-3 flex items-center gap-2">  
-            <div class="bar" style="background:#818cf8;"></div>  
-            <span class="text-indigo-300 font-bold text-base" x-text="t.name"></span>  
-            <span class="text-slate-400 text-xs" x-text="'('+t.rows.length+' 条)'"></span>  
+      <!-- 所有表确认统计 -->  
+      <div class="glass-card rounded-2xl px-5 py-4 mb-4" x-show="tables.some(t=>(t.rows&&t.rows.length>0))">  
+        <div class="section-title mb-2">  
+          <div class="bar" style="background:#34d399;"></div>  
+          <span class="text-emerald-300 font-bold text-[15px]">所有表确认统计</span>  
+        </div>  
+        <div class="flex flex-wrap gap-4">  
+          <div class="stat-card flex-1" style="min-width:100px;">  
+            <div class="section-label" style="margin-bottom:2px;">表数量</div>  
+            <div class="text-2xl font-black text-white" x-text="tables.filter(t=>t.rows&&t.rows.length>0).length"></div>  
           </div>  
+          <div class="stat-card flex-1" style="min-width:100px;">  
+            <div class="section-label" style="margin-bottom:2px;">总记录</div>  
+            <div class="text-2xl font-black text-white" x-text="allTablesTotalRows"></div>  
+          </div>  
+          <div class="stat-card flex-1" style="min-width:100px;">  
+            <div class="section-label" style="margin-bottom:2px;">已确认</div>  
+            <div class="text-2xl font-black text-emerald-400" x-text="allTablesConfirmedCount"></div>  
+          </div>  
+          <div class="stat-card flex-1" style="min-width:100px;">  
+            <div class="section-label" style="margin-bottom:2px;">未确认</div>  
+            <div class="text-2xl font-black text-amber-400" x-text="allTablesTotalRows - allTablesConfirmedCount"></div>  
+          </div>  
+          <div class="stat-card flex-1" style="min-width:160px;">  
+            <div class="section-label" style="margin-bottom:4px;">总确认率</div>  
+            <div class="progress-bar-bg mb-1"><div class="progress-bar-fill" :style="'width:'+allTablesProgressPct+'%'"></div></div>  
+            <div class="text-right text-xs text-slate-400" x-text="allTablesProgressPct+'%'"></div>  
+          </div>  
+        </div>  
+      </div>  
 
-      <!-- 表头格式统计（当前表 t） -->  
-      <div class="glass-card rounded-2xl p-5 mb-5" x-show="t.schemas&&t.schemas.length>0">  
+      <!-- 表 Tab 切换（双击表名可编辑，× 删除整表） -->  
+      <div class="flex flex-wrap gap-2 mb-4 border-b border-slate-700/40 pb-3">  
+        <template x-for="(t, ti) in tables" :key="'tab'+t.id">  
+          <div class="flex items-center rounded-xl overflow-hidden gap-0" :class="activeTableIndex===ti && editingTabIndex!==ti ? 'tab-active-indigo' : (editingTabIndex===ti ? '' : 'tab-inactive')">  
+            <template x-if="editingTabIndex !== ti">  
+              <button type="button" @click="activeTableIndex=ti" @dblclick.prevent="editingTabIndex=ti"  
+                class="tab-btn text-sm px-4 py-2 font-bold text-left min-w-0 rounded-l-xl"  
+                :class="tables.length>1 ? 'rounded-r-none' : 'rounded-r-xl'"  
+                :title="'双击编辑表名 · '+((t.rows?t.rows.length:0))+' 条'"  
+                x-text="(t.name||('表'+t.id)) + ' (' + (t.rows?t.rows.length:0) + ' 条)'"></button>  
+            </template>  
+            <template x-if="editingTabIndex === ti">  
+              <input type="text" x-model="t.name"  
+                @blur="if(!(t.name||'').trim()) t.name='表'+t.id; editingTabIndex=-1"  
+                @keydown.enter.prevent="if(!(t.name||'').trim()) t.name='表'+t.id; editingTabIndex=-1;$el.blur()"  
+                @keydown.escape.prevent="editingTabIndex=-1;$el.blur()"  
+                @click.stop  
+                class="tab-edit-input text-sm px-3 py-2 font-bold min-w-0 rounded-l-xl rounded-r-none"  
+                style="min-width:80px;max-width:180px;"  
+                placeholder="表名"  
+                x-init="$nextTick(()=>$el.focus();$el.select())"/>  
+            </template>  
+            <button type="button" x-show="tables.length>1" @click.stop="removeTableByIndex(ti)"  
+              class="flex-shrink-0 w-7 h-8 flex items-center justify-center rounded-r-xl text-slate-400 hover:text-white hover:bg-red-500/30 transition-colors"  
+              title="删除此表（整表移除）">×</button>  
+          </div>  
+        </template>  
+      </div>  
+
+      <!-- 当前表内容（仅显示选中的表） -->  
+      <div class="mb-10" x-show="currentTable">  
+        <div class="section-title mb-3 flex items-center gap-2">  
+          <div class="bar" style="background:#818cf8;"></div>  
+          <span class="text-indigo-300 font-bold text-base" x-text="currentTable.name"></span>  
+          <span class="text-slate-400 text-xs" x-text="'('+(currentTable.rows?currentTable.rows.length:0)+' 条)'"></span>  
+        </div>  
+
+      <!-- 表头格式统计（当前表） -->  
+      <div class="glass-card rounded-2xl p-5 mb-5" x-show="currentTable.schemas&&currentTable.schemas.length>0">  
         <div class="section-title mb-3">  
           <div class="bar" style="background:#a78bfa;"></div>  
           <span class="text-purple-300 font-bold text-[15px]">表头格式统计</span>  
-          <span class="ml-2 text-xs text-slate-400">共 <span x-text="t.schemas.length"></span> 种格式</span>  
+          <span class="ml-2 text-xs text-slate-400">共 <span x-text="currentTable.schemas.length"></span> 种格式</span>  
         </div>  
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 mb-4">  
-          <template x-for="(s,si) in t.schemas" :key="'sc'+t.id+'_'+si">  
+          <template x-for="(s,si) in currentTable.schemas" :key="'sc'+currentTable.id+'_'+si">  
             <div class="schema-stat-card">  
               <div class="schema-stat-dot" :style="'background:'+getSchemaColor(si)"></div>  
               <div class="flex-1 min-w-0">  
                 <div class="flex items-center gap-2 mb-1">  
-                  <span class="text-white font-bold text-sm truncate" x-text="s.name"></span>  
-                  <span class="schema-tag text-[10px]" :style="'background:'+getSchemaColor(si)+'22;color:'+getSchemaColor(si)+';border:1px solid'+getSchemaColor(si)+'44'">  
+                  <template x-if="editingSchemaIndex !== si">  
+                    <span class="text-white font-bold text-sm truncate cursor-pointer select-none flex-1 min-w-0"  
+                      x-text="s.name||('Format-'+String.fromCharCode(65+si))"  
+                      @dblclick="editingSchemaIndex=si"  
+                      title="双击编辑格式名"></span>  
+                  </template>  
+                  <template x-if="editingSchemaIndex === si">  
+                    <input type="text" x-model="s.name"  
+                      @blur="if(!(s.name||'').trim()) s.name='Format-'+String.fromCharCode(65+si); editingSchemaIndex=-1"  
+                      @keydown.enter.prevent="if(!(s.name||'').trim()) s.name='Format-'+String.fromCharCode(65+si); editingSchemaIndex=-1;$el.blur()"  
+                      @keydown.escape.prevent="editingSchemaIndex=-1;$el.blur()"  
+                      @click.stop  
+                      class="tab-edit-input text-sm px-2 py-1 rounded-lg font-bold flex-1 min-w-0"  
+                      style="max-width:140px;"  
+                      placeholder="格式名"  
+                      x-init="$nextTick(()=>$el.focus();$el.select())"/>  
+                  </template>  
+                  <span class="schema-tag text-[10px] flex-shrink-0" :style="'background:'+getSchemaColor(si)+'22;color:'+getSchemaColor(si)+';border:1px solid'+getSchemaColor(si)+'44'">  
                     <span x-text="s.headers.length+'列'"></span>  
                   </span>  
                 </div>  
                 <div class="flex items-center gap-2 mb-1">  
                   <div class="flex-1 progress-bar-bg" style="height:5px;">  
-                    <div class="schema-stat-bar" :style="'width:'+getSchemaRowPctForTable(si,t)+'%;background:'+getSchemaColor(si)"></div>  
+                    <div class="schema-stat-bar" :style="'width:'+getSchemaRowPctForTable(si,currentTable)+'%;background:'+getSchemaColor(si)"></div>  
                   </div>  
                   <span class="text-xs text-slate-400 flex-shrink-0">  
-                    <span class="font-bold text-white" x-text="getSchemaRowCountForTable(si,t)"></span> 行  
-                    <span class="text-slate-400 ml-1" x-text="'('+getSchemaRowPctForTable(si,t)+'%)'"></span>  
+                    <span class="font-bold text-white" x-text="getSchemaRowCountForTable(si,currentTable)"></span> 行  
+                    <span class="text-slate-400 ml-1" x-text="'('+getSchemaRowPctForTable(si,currentTable)+'%)'"></span>  
                   </span>  
                 </div>  
                 <div class="flex items-center gap-3 text-[11px] text-slate-400">  
-                  <span>✅ <span class="text-emerald-400 font-semibold" x-text="getSchemaConfirmedCountForTable(si,t)"></span> 已确认</span>  
-                  <span>⏳ <span class="text-amber-400 font-semibold" x-text="getSchemaRowCountForTable(si,t)-getSchemaConfirmedCountForTable(si,t)"></span> 未确认</span>  
+                  <span>✅ <span class="text-emerald-400 font-semibold" x-text="getSchemaConfirmedCountForTable(si,currentTable)"></span> 已确认</span>  
+                  <span>⏳ <span class="text-amber-400 font-semibold" x-text="getSchemaRowCountForTable(si,currentTable)-getSchemaConfirmedCountForTable(si,currentTable)"></span> 未确认</span>  
                 </div>  
                 <div class="mt-1 text-[10px] text-slate-400 truncate" x-text="s.headers.slice(0,4).join(' · ')+(s.headers.length>4?' …':'')"></div>  
               </div>  
@@ -703,36 +816,36 @@
         <div class="flex flex-wrap gap-4 pt-3 border-t border-slate-700/50">  
           <div class="stat-card flex-1" style="min-width:120px;">  
             <div class="section-label" style="margin-bottom:2px;">总记录</div>  
-            <div class="text-2xl font-black text-white" x-text="t.rows.length"></div>  
+            <div class="text-2xl font-black text-white" x-text="currentTable.rows?currentTable.rows.length:0"></div>  
           </div>  
           <div class="stat-card flex-1" style="min-width:120px;">  
             <div class="section-label" style="margin-bottom:2px;">已确认</div>  
-            <div class="text-2xl font-black text-emerald-400" x-text="getTableConfirmedCount(t)"></div>  
+            <div class="text-2xl font-black text-emerald-400" x-text="getTableConfirmedCount(currentTable)"></div>  
           </div>  
           <div class="stat-card flex-1" style="min-width:120px;">  
             <div class="section-label" style="margin-bottom:2px;">未确认</div>  
-            <div class="text-2xl font-black text-amber-400" x-text="t.rows.length-getTableConfirmedCount(t)"></div>  
+            <div class="text-2xl font-black text-amber-400" x-text="(currentTable.rows?currentTable.rows.length:0)-getTableConfirmedCount(currentTable)"></div>  
           </div>  
           <div class="stat-card flex-1" style="min-width:200px;">  
             <div class="section-label" style="margin-bottom:4px;">总进度</div>  
-            <div class="progress-bar-bg mb-1"><div class="progress-bar-fill" :style="'width:'+getTableProgressPct(t)+'%'"></div></div>  
-            <div class="text-right text-xs text-slate-400" x-text="getTableProgressPct(t)+'%'"></div>  
+            <div class="progress-bar-bg mb-1"><div class="progress-bar-fill" :style="'width:'+getTableProgressPct(currentTable)+'%'"></div></div>  
+            <div class="text-right text-xs text-slate-400" x-text="getTableProgressPct(currentTable)+'%'"></div>  
           </div>  
         </div>  
       </div>  
 
-      <!-- 操作栏（当前表 ti） -->  
+      <!-- 操作栏（当前表） -->  
       <div class="glass-card rounded-2xl p-4 mb-5">  
         <div class="flex flex-wrap items-center gap-2">  
-          <button @click="activeTableIndex=ti;exportModifications()" class="btn-purple text-white text-sm font-bold px-4 py-2 rounded-xl" title="导出此表">💾 导出当前修改</button>  
-          <button @click="activeTableIndex=ti;$refs.importModificationsInputMulti&&$refs.importModificationsInputMulti.click()" class="btn-rose text-white text-sm font-bold px-4 py-2 rounded-xl" title="导入到此表">📂 导入历史数据</button>  
-          <button @click="activeTableIndex=ti;confirmAll()" class="btn-success text-white text-sm font-bold px-4 py-2 rounded-xl">✅ 全部确认</button>  
-          <button @click="activeTableIndex=ti;cancelAllConfirm()" class="btn-warning text-white text-sm font-bold px-4 py-2 rounded-xl">↩️ 取消全部</button>  
-          <button @click="activeTableIndex=ti;openAppendModal('current')" class="btn-amber text-white text-sm font-bold px-4 py-2 rounded-xl">📎 在当前表追加</button>  
+          <button @click="exportModifications()" class="btn-purple text-white text-sm font-bold px-4 py-2 rounded-xl" title="导出此表">💾 导出当前修改</button>  
+          <button @click="$refs.importModificationsInputMulti&&$refs.importModificationsInputMulti.click()" class="btn-rose text-white text-sm font-bold px-4 py-2 rounded-xl" title="导入到此表">📂 导入历史数据</button>  
+          <button @click="confirmAll()" class="btn-success text-white text-sm font-bold px-4 py-2 rounded-xl">✅ 全部确认</button>  
+          <button @click="cancelAllConfirm()" class="btn-warning text-white text-sm font-bold px-4 py-2 rounded-xl">↩️ 取消全部</button>  
+          <button @click="openAppendModal('current')" class="btn-amber text-white text-sm font-bold px-4 py-2 rounded-xl">📎 在当前表追加</button>  
           <button @click="openAppendModal('new')" class="btn-cyan text-white text-sm font-bold px-4 py-2 rounded-xl">📋 新建表追加</button>  
-          <button @click="activeTableIndex=ti;showAddColModal=true;newColPosition=-1;" class="btn-primary text-white text-sm font-bold px-4 py-2 rounded-xl">➕ 添加列</button>  
-          <button @click="activeTableIndex=ti;showExportModal=true;initExportSchemaFilter();" class="btn-cyan text-white text-sm font-bold px-4 py-2 rounded-xl">📤 导出</button>  
-          <button @click="clearTableByIndex(ti)" class="btn-danger text-white text-sm font-bold px-4 py-2 rounded-xl ml-auto">🗑️ 清空此表</button>  
+          <button @click="showAddColModal=true;newColPosition=-1;" class="btn-primary text-white text-sm font-bold px-4 py-2 rounded-xl">➕ 添加列</button>  
+          <button @click="showExportModal=true;initExportSchemaFilter();" class="btn-cyan text-white text-sm font-bold px-4 py-2 rounded-xl">📤 导出</button>  
+          <button @click="clearTableByIndex(activeTableIndex)" class="btn-danger text-white text-sm font-bold px-4 py-2 rounded-xl ml-auto">🗑️ 清空此表</button>  
         </div>  
       </div>  
 
@@ -741,9 +854,9 @@
         <div class="edit-mode-dot"></div>  
         <span>💡 <strong>在线编辑</strong>：双击单元格编辑 · 右键快捷菜单 · <kbd style="background:rgba(99,102,241,0.2);border:1px solid rgba(129,140,248,0.3);border-radius:3px;padding:0 4px;font-size:10px;color:#818cf8;">Enter</kbd> 保存 · <kbd style="background:rgba(99,102,241,0.2);border:1px solid rgba(129,140,248,0.3);border-radius:3px;padding:0 4px;font-size:10px;color:#818cf8;">Esc</kbd> 取消</span>  
       </div>  
-        <div class="text-slate-400 text-xs whitespace-nowrap mb-2">显示 <span class="text-slate-200 font-bold" x-text="getFilteredRowsForTable(t).length"></span> 条</div>  
+        <div class="text-slate-400 text-xs whitespace-nowrap mb-2">显示 <span class="text-slate-200 font-bold" x-text="currentFilteredRows.length"></span> 条</div>  
 
-      <!-- 表格主体（当前表 t） -->  
+      <!-- 表格主体（当前表） -->  
       <div class="glass-card rounded-2xl overflow-hidden mb-6">  
         <div class="table-container">  
           <table>  
@@ -751,23 +864,23 @@
               <tr>  
                 <th style="width:48px;text-align:center;">#</th>  
                 <th style="width:80px;text-align:center;">格式</th>  
-                <template x-for="(col,ci) in t.headers" :key="'h'+t.id+'_'+ci">  
-                  <th @contextmenu.prevent="activeTableIndex=ti;openCtxMenuCol($event,ci)">  
+                <template x-for="(col,ci) in currentTable.headers" :key="'h'+currentTable.id+'_'+ci">  
+                  <th @contextmenu.prevent="openCtxMenuCol($event,ci)">  
                     <div class="th-inner">  
-                      <template x-if="editingHeaderTableIndex===ti && editingHeaderIdx===ci">  
+                      <template x-if="editingHeaderTableIndex===activeTableIndex && editingHeaderIdx===ci">  
                         <input type="text" class="th-edit-input" :value="col"  
                           @keydown.enter="saveHeaderEdit($event,ci)"  
                           @keydown.escape="editingHeaderIdx=-1;editingHeaderTableIndex=-1"  
                           @blur="saveHeaderEdit($event,ci)"  
                           x-init="$nextTick(()=>$el.focus())"/>  
                       </template>  
-                      <template x-if="!(editingHeaderTableIndex===ti && editingHeaderIdx===ci)">  
-                        <span class="cursor-pointer select-none" @dblclick="activeTableIndex=ti;editingHeaderTableIndex=ti;editingHeaderIdx=ci" x-text="col"></span>  
+                      <template x-if="!(editingHeaderTableIndex===activeTableIndex && editingHeaderIdx===ci)">  
+                        <span class="cursor-pointer select-none" @dblclick="editingHeaderTableIndex=activeTableIndex;editingHeaderIdx=ci" x-text="col"></span>  
                       </template>  
-                      <template x-if="t.customColIndices&&t.customColIndices.includes(ci)">  
+                      <template x-if="currentTable.customColIndices&&currentTable.customColIndices.includes(ci)">  
                         <span class="badge-custom">自定义</span>  
                       </template>  
-                      <button class="th-del-btn" @click.stop="activeTableIndex=ti;openDelColModal(ci)" title="删除此列">✕</button>  
+                      <button class="th-del-btn" @click.stop="openDelColModal(ci)" title="删除此列">✕</button>  
                     </div>  
                   </th>  
                 </template>  
@@ -776,37 +889,37 @@
               </tr>  
             </thead>  
             <tbody>  
-              <template x-for="(row,ri) in getFilteredRowsForTable(t)" :key="'r'+t.id+'_'+row.__id">  
+              <template x-for="(row,ri) in currentFilteredRows" :key="'r'+currentTable.id+'_'+row.__id">  
                 <tr :class="[row.__confirmed?'row-confirmed':'',row.__appended?'row-appended':'',row.__isNew?'row-new-flash':'']"  
-                    @contextmenu.prevent="activeTableIndex=ti;openCtxMenuRow($event,row,null)">  
+                    @contextmenu.prevent="openCtxMenuRow($event,row,null)">  
                   <td class="text-center text-slate-400 text-xs">  
                     <span x-text="row.__displayIndex"></span>  
                     <template x-if="row.__appended"><span class="badge-new ml-1">新</span></template>  
                   </td>  
                   <td class="text-center">  
-                    <template x-if="row.__schemaIdx>=0 && t.schemas&&t.schemas[row.__schemaIdx]">  
+                    <template x-if="row.__schemaIdx>=0 && currentTable.schemas&&currentTable.schemas[row.__schemaIdx]">  
                       <span class="schema-tag" :style="'background:'+getSchemaColor(row.__schemaIdx)+'22;color:'+getSchemaColor(row.__schemaIdx)+';border:1px solid'+getSchemaColor(row.__schemaIdx)+'44;font-size:9px;'">  
-                        <span x-text="t.schemas[row.__schemaIdx].name"></span>  
+                        <span x-text="currentTable.schemas[row.__schemaIdx].name"></span>  
                       </span>  
                     </template>  
                   </td>  
-                  <template x-for="(col,ci) in t.headers" :key="'c'+t.id+'_'+row.__id+'_'+ci">  
-                    <td @contextmenu.prevent.stop="activeTableIndex=ti;openCtxMenuRow($event,row,ci)" @dblclick.stop="startCellEdit(row,ci,ti)">  
-                      <template x-if="editingCell.tableIndex===ti && editingCell.rowId===row.__id && editingCell.ci===ci">  
+                  <template x-for="(col,ci) in currentTable.headers" :key="'c'+currentTable.id+'_'+row.__id+'_'+ci">  
+                    <td @contextmenu.prevent.stop="openCtxMenuRow($event,row,ci)" @dblclick.stop="startCellEdit(row,ci,activeTableIndex)">  
+                      <template x-if="editingCell.tableIndex===activeTableIndex && editingCell.rowId===row.__id && editingCell.ci===ci">  
                         <div>  
                           <textarea class="cell-input" rows="2"  
-                            :value="getCellValueForTable(row,ci,t)"  
-                            @keydown.enter.prevent="activeTableIndex=ti;saveCellEdit(row,ci,$event.target.value)"  
+                            :value="getCellValueForTable(row,ci,currentTable)"  
+                            @keydown.enter.prevent="saveCellEdit(row,ci,$event.target.value)"  
                             @keydown.escape="stopCellEdit()"  
-                            @blur="activeTableIndex=ti;saveCellEdit(row,ci,$event.target.value)"  
+                            @blur="saveCellEdit(row,ci,$event.target.value)"  
                             x-init="$nextTick(()=>{$el.focus();$el.setSelectionRange($el.value.length,$el.value.length)})"></textarea>  
                           <div class="cell-edit-hint"><span><kbd>Enter</kbd> 保存</span><span><kbd>Esc</kbd> 取消</span></div>  
                         </div>  
                       </template>  
-                      <template x-if="!(editingCell.tableIndex===ti && editingCell.rowId===row.__id && editingCell.ci===ci)">  
+                      <template x-if="!(editingCell.tableIndex===activeTableIndex && editingCell.rowId===row.__id && editingCell.ci===ci)">  
                         <div class="cell-view">  
-                          <span class="cell-text text-xs leading-relaxed" x-text="getCellValueForTable(row,ci,t)"></span>  
-                          <span class="cell-edit-icon" @click.stop="startCellEdit(row,ci,ti)">✏️</span>  
+                          <span class="cell-text text-xs leading-relaxed" x-text="getCellValueForTable(row,ci,currentTable)"></span>  
+                          <span class="cell-edit-icon" @click.stop="startCellEdit(row,ci,activeTableIndex)">✏️</span>  
                         </div>  
                       </template>  
                     </td>  
@@ -817,32 +930,32 @@
                   </td>  
                   <td class="text-center">  
                     <div class="flex items-center justify-center gap-1">  
-                      <button x-show="!row.__confirmed" @click="activeTableIndex=ti;confirmRow(row)" class="btn-sm btn-success">确认</button>  
-                      <button x-show="row.__confirmed" @click="activeTableIndex=ti;revokeRow(row)" class="btn-sm btn-warning">撤销</button>  
-                      <button @click="activeTableIndex=ti;openEditRowModal(row)" class="btn-sm btn-primary" title="编辑">✏️</button>  
-                      <button @click="activeTableIndex=ti;deleteRow(row)" class="btn-sm btn-danger" title="删除">🗑️</button>  
+                      <button x-show="!row.__confirmed" @click="confirmRow(row)" class="btn-sm btn-success">确认</button>  
+                      <button x-show="row.__confirmed" @click="revokeRow(row)" class="btn-sm btn-warning">撤销</button>  
+                      <button @click="openEditRowModal(row)" class="btn-sm btn-primary" title="编辑">✏️</button>  
+                      <button @click="deleteRow(row)" class="btn-sm btn-danger" title="删除">🗑️</button>  
                     </div>  
                   </td>  
                 </tr>  
               </template>  
-              <tr x-show="getFilteredRowsForTable(t).length===0">  
-                <td :colspan="(t.headers?t.headers.length:0)+4" class="text-center text-slate-400 py-16 text-sm">😶 没有匹配的数据</td>  
+              <tr x-show="currentFilteredRows.length===0">  
+                <td :colspan="(currentTable.headers?currentTable.headers.length:0)+4" class="text-center text-slate-400 py-16 text-sm">😶 没有匹配的数据</td>  
               </tr>  
             </tbody>  
           </table>  
         </div>  
       </div>  
 
-      <!-- 修改历史（当前表 t） -->  
-      <div class="glass-card rounded-2xl p-5 mb-6" x-show="t.editHistory&&t.editHistory.length>0">  
+      <!-- 修改历史（当前表） -->  
+      <div class="glass-card rounded-2xl p-5 mb-6" x-show="currentTable.editHistory&&currentTable.editHistory.length>0">  
         <div class="section-title mb-3">  
           <div class="bar" style="background:#f59e0b;"></div>  
           <span class="text-amber-300 font-bold text-[15px]">修改历史</span>  
-          <span class="ml-2 text-xs text-slate-400">（最近 <span x-text="t.editHistory.length"></span> 条）</span>  
-          <button @click="t.editHistory=[]" class="ml-auto text-xs text-slate-400 hover:text-slate-300 transition-colors">清空</button>  
+          <span class="ml-2 text-xs text-slate-400">（最近 <span x-text="currentTable.editHistory.length"></span> 条）</span>  
+          <button @click="currentTable.editHistory=[]" class="ml-auto text-xs text-slate-400 hover:text-slate-300 transition-colors">清空</button>  
         </div>  
         <div class="flex flex-col gap-2 max-h-40 overflow-y-auto">  
-          <template x-for="(h,hi) in (t.editHistory||[]).slice().reverse()" :key="'hist'+t.id+'_'+hi">  
+          <template x-for="(h,hi) in (currentTable.editHistory||[]).slice().reverse()" :key="'hist'+currentTable.id+'_'+hi">  
             <div class="history-item">  
               <div class="history-dot" :style="'background:'+(h.type==='cell'?'#818cf8':h.type==='col-del'?'#f43f5e':h.type==='row-del'?'#f43f5e':h.type==='header'?'#38bdf8':'#fbbf24')"></div>  
               <span class="text-slate-400 text-xs flex-shrink-0" x-text="h.time"></span>  
@@ -852,8 +965,7 @@
         </div>  
       </div>  
 
-        </div>  
-      </template>  
+      </div><!-- /当前表内容 -->  
 
     </div><!-- /有数据时 -->  
 
@@ -893,6 +1005,8 @@ function tableApp() {
     activeTableIndex: 0,  
     _nextTableId: 2,
     exportReportTitle: '表格内容确认报告（全部）',
+    exportRemark: '',
+    undoSnapshot: null,
 
     /* ── 表格核心（委托到当前表，保留同名便于模板兼容） ── */  
     get currentTable() {  
@@ -925,6 +1039,7 @@ function tableApp() {
     appendNewHeadInput: '',  
     appendNewHeadFileName: '',  
     appendNewHeadDragOver: false,  
+    defaultNewHeadTemplate: 'Name\nBits\nPermission\nDescription\nReset Value\nConfig Value\nIs InternalHw\nOn Design Interface',  
     appendValInput: '',  
     appendFileName: '',  
     appendDragOver: false,  
@@ -933,6 +1048,8 @@ function tableApp() {
     editingCell: { tableIndex: -1, rowId: null, ci: null },  
     editingHeaderIdx: -1,  
     editingHeaderTableIndex: -1,  
+    editingTabIndex: -1,  
+    editingSchemaIndex: -1,  
 
     /* ── 右键菜单 ── */  
     ctxMenu: { show:false, x:0, y:0, row:null, ci:null },  
@@ -1025,6 +1142,9 @@ function tableApp() {
       if (!t||!t.rows||!t.rows.length) return 0;  
       return Math.round(this.getTableConfirmedCount(t)/t.rows.length*100);  
     },  
+    get allTablesTotalRows() { return this.tables.reduce((n,t)=>n+(t.rows?t.rows.length:0),0); },  
+    get allTablesConfirmedCount() { return this.tables.reduce((n,t)=>n+this.getTableConfirmedCount(t),0); },  
+    get allTablesProgressPct() { const total=this.allTablesTotalRows; return total?Math.round(this.allTablesConfirmedCount/total*100):0; },  
     getFilteredRowsForTable(t) {  
       if (!t||!t.rows) return [];  
       let list = t.rows;  
@@ -1060,6 +1180,7 @@ function tableApp() {
       if (!t||!t.rows||!t.rows.length) return 0;  
       return Math.round(this.getSchemaRowCountForTable(si,t)/t.rows.length*100);  
     },  
+    get currentFilteredRows() { return this.getFilteredRowsForTable(this.currentTable); },  
 
     /* ════════════════════ 工具函数 ════════════════════ */  
 
@@ -1577,6 +1698,12 @@ function tableApp() {
       this.appendNewHeadInput = '';
       this.appendNewHeadFileName = '';
     },
+    applyDefaultNewHead() {
+      this.appendNewHeadMode = 'text';
+      this.appendNewHeadInput = this.defaultNewHeadTemplate;
+      this.appendNewHeadFileName = '';
+      this.showToast('已填入默认表头', 'info');
+    },
 
     doAppend() {
       if (!this.appendValInput.trim()) {
@@ -1588,13 +1715,12 @@ function tableApp() {
       }
 
       let schemaIdx;
-      if (this.appendNewSchema) {
-        // 新建 schema
+      if (this.appendNewSchema && this.appendTarget !== 'new') {
+        // 新建 schema（仅「当前表追加」时往当前表添加格式；新建表追加不修改原表）
         const name = this.appendNewSchemaName.trim() ||
           'Format-' + String.fromCharCode(65 + this.schemas.length);
         const heads = this.parsedNewHeadPreview;
         if (!heads.length) { this.showToast('新建表头解析失败', 'error'); return; }
-        // 检查是否与现有 schema 重复
         const dupIdx = this.schemas.findIndex(
           s => JSON.stringify(s.headers) === JSON.stringify(heads)
         );
@@ -1606,7 +1732,7 @@ function tableApp() {
           schemaIdx = this.schemas.length - 1;
           this._rebuildHeaders();
         }
-      } else {
+      } else if (!this.appendNewSchema) {
         schemaIdx = this.appendSchemaIdx;
       }
 
@@ -1818,6 +1944,7 @@ body{background:#0f172a;color:#cbd5e1;font-family:'Segoe UI',system-ui,sans-seri
 .report-wrap{max-width:1412px;margin:0 auto;padding:0 16px}
 h1{font-size:24px;font-weight:800;margin-bottom:8px;background:linear-gradient(90deg,#818cf8,#38bdf8,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .meta{font-size:14px;color:#94a3b8;margin-bottom:24px}.meta span{color:#cbd5e1;font-weight:600}
+.report-remark{font-size:13px;color:#94a3b8;margin-bottom:24px;padding:12px 16px;background:rgba(30,41,59,0.6);border-radius:10px;border:1px solid rgba(99,102,241,0.2);white-space:pre-line;line-height:1.6}
 .stats{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
 .stat{background:rgba(30,41,59,0.8);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px 18px;font-size:13px;min-width:100px}
 .stat strong{font-size:20px;font-weight:800;display:block}.stat .lbl{color:#94a3b8;font-size:11px}
@@ -1842,6 +1969,7 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
 <div class="report-wrap">
 <h1>📋 表格内容确认报告</h1>
 <div class="meta">导出时间：<span>${now}</span></div>
+${(this.exportRemark || '').trim() ? '<div class="report-remark">' + esc((this.exportRemark || '').trim()) + '</div>' : ''}
 <div class="stats">
   <div class="stat"><strong style="color:#e2e8f0">${exportRows.length}</strong><div class="lbl">导出总数</div></div>
   <div class="stat"><strong style="color:#34d399">${confirmedCnt}</strong><div class="lbl">已确认</div></div>
@@ -1893,6 +2021,7 @@ body{background:#0f172a;color:#cbd5e1;font-family:'Segoe UI',system-ui,sans-seri
 h1{font-size:24px;font-weight:800;margin-bottom:8px;background:linear-gradient(90deg,#818cf8,#38bdf8,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 h2{font-size:18px;font-weight:700;color:#a5b4fc;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(99,102,241,0.3);}
 .meta{font-size:14px;color:#94a3b8;margin-bottom:24px}.meta span{color:#cbd5e1;font-weight:600}
+.report-remark{font-size:13px;color:#94a3b8;margin-bottom:24px;padding:12px 16px;background:rgba(30,41,59,0.6);border-radius:10px;border:1px solid rgba(99,102,241,0.2);white-space:pre-line;line-height:1.6}
 .stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
 .stat{background:rgba(30,41,59,0.8);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px 18px;font-size:13px;min-width:100px}
 .stat strong{font-size:20px;font-weight:800;display:block}.stat .lbl{color:#94a3b8;font-size:11px}
@@ -1975,6 +2104,7 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
 <div class="report-wrap">
 <h1>📋 ${esc(this.exportReportTitle || '表格内容确认报告（全部）')}</h1>
 <div class="meta">导出时间：<span>${now}</span> · 共 <strong>${tablesWithData.length}</strong> 个表 · 合计 <strong>${totalRows}</strong> 条记录</div>
+${(this.exportRemark || '').trim() ? '<div class="report-remark">' + esc((this.exportRemark || '').trim()) + '</div>' : ''}
 ${sections}
 <footer>由「表格内容确认工具 v3」生成 · 导出所有表格 · ${now}</footer>
 </div>
@@ -1985,7 +2115,9 @@ ${sections}
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `table-export-all-${Date.now()}.html`;
+      const baseTitle = (this.exportReportTitle || '表格内容确认报告（全部）').trim() || '表格内容确认报告（全部）';
+      const safeTitle = baseTitle.replace(/[\\\\/:*?"<>|]/g, '_');
+      a.download = `${safeTitle}.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -2045,6 +2177,8 @@ grst
       const snapshot = {
         version: 1,
         exportedAt: new Date().toISOString(),
+        reportTitle: this.exportReportTitle,
+        reportRemark: this.exportRemark,
         headers: [...this.headers],
         customColIndices: [...this.customColIndices],
         schemas: this.schemas.map(s => ({ name: s.name, headers: [...s.headers] })),
@@ -2080,6 +2214,8 @@ grst
       const snapshot = {
         version: 2,
         exportedAt: new Date().toISOString(),
+        reportTitle: this.exportReportTitle,
+        reportRemark: this.exportRemark,
         tables: this.tables.map(t => ({
           id: t.id,
           name: t.name || ('表' + t.id),
@@ -2103,13 +2239,39 @@ grst
       const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
-      a.download = `tablecheck-all-modifications-${Date.now()}.json`;
+      const baseTitle = (this.exportReportTitle || '表格内容确认报告（全部）').trim() || '表格内容确认报告（全部）';
+      const safeTitle = baseTitle.replace(/[\\\\/:*?"<>|]/g, '_');
+      a.download = `${safeTitle}-所有修改.json`;
       document.body.appendChild(a);
       a.click();
       URL.revokeObjectURL(a.href);
       document.body.removeChild(a);
       const totalRows = tablesWithData.reduce((sum, t) => sum + (t.rows || []).length, 0);
       this.showToast(`💾 已导出所有修改：${this.tables.length} 个表，共 ${totalRows} 条`, 'success');
+    },
+
+    _saveUndoSnapshot() {
+      this.undoSnapshot = {
+        tables: JSON.parse(JSON.stringify(this.tables)),
+        activeTableIndex: this.activeTableIndex,
+        _nextTableId: this._nextTableId,
+      };
+    },
+    undoLastImport() {
+      if (!this.undoSnapshot) return;
+      this.tables = JSON.parse(JSON.stringify(this.undoSnapshot.tables));
+      this.activeTableIndex = this.undoSnapshot.activeTableIndex;
+      this._nextTableId = this.undoSnapshot._nextTableId;
+      this.undoSnapshot = null;
+      this._reindex();
+      this.searchText = '';
+      this.filterMode = 'all';
+      this.editingCell = { tableIndex: -1, rowId: null, ci: null };
+      this.editingHeaderIdx = -1;
+      this.editingHeaderTableIndex = -1;
+      this.showEditRowModal = false;
+      this.editRowTarget = null;
+      this.showToast('↩️ 已恢复到导入前的状态', 'success');
     },
 
     doImportModifications(ev) {
@@ -2121,18 +2283,9 @@ grst
         try {
           const data = JSON.parse(reader.result);
           if (data == null || typeof data !== 'object') throw new Error('无效的 JSON');
-          if (data.version !== 1 || !Array.isArray(data.headers) || !Array.isArray(data.rows) || !Array.isArray(data.schemas)) {
-            throw new Error('不支持的格式或缺少必要字段（version, headers, rows, schemas）');
-          }
-          if (!this.tables.length) { this.tables = [{ id: this._nextTableId++, name: '表1', headers: [], customColIndices: [], schemas: [], rows: [], idCounter: 0, editHistory: [] }]; this.activeTableIndex = 0; }
-          const cur = this.currentTable;
-          if (!cur) return;
-          cur.headers = data.headers || [];
-          cur.customColIndices = Array.isArray(data.customColIndices) ? data.customColIndices : [];
-          cur.schemas = (data.schemas || []).map(s => ({ name: s.name || '', headers: [...(s.headers || [])] }));
-          let nextId = 1;
-          cur.rows = (data.rows || []).map(r => {
-            const id = r.__id != null && r.__id > 0 ? r.__id : nextId++;
+
+          const normRow = (r, nextIdRef) => {
+            const id = r.__id != null && r.__id > 0 ? r.__id : nextIdRef.val++;
             return {
               __id: id,
               __displayIndex: r.__displayIndex != null ? r.__displayIndex : 0,
@@ -2143,16 +2296,68 @@ grst
               __appended: !!r.__appended,
               __isNew: false,
             };
-          });
+          };
+
+          if (data.version === 2 && Array.isArray(data.tables)) {
+            if (!data.tables.length) throw new Error('JSON 中未包含有效表数据');
+            this._saveUndoSnapshot();
+            const tables = data.tables.map(t => {
+              const nextIdRef = { val: 1 };
+              const rows = (t.rows || []).map(r => normRow(r, nextIdRef));
+              const maxId = rows.length ? Math.max(...rows.map(r => r.__id)) : 0;
+              const idCounter = typeof t.idCounter === 'number' ? Math.max(t.idCounter, maxId) : maxId;
+              return {
+                id: typeof t.id === 'number' ? t.id : 1,
+                name: typeof t.name === 'string' ? t.name : '表1',
+                headers: Array.isArray(t.headers) ? [...t.headers] : [],
+                customColIndices: Array.isArray(t.customColIndices) ? [...t.customColIndices] : [],
+                schemas: (t.schemas || []).map(s => ({ name: s.name || '', headers: [...(s.headers || [])] })),
+                rows,
+                idCounter,
+                editHistory: Array.isArray(t.editHistory) ? t.editHistory : [],
+              };
+            });
+            this.tables = tables;
+            this._nextTableId = typeof data._nextTableId === 'number' ? data._nextTableId : (tables.length + 1);
+            this.activeTableIndex = 0;
+            if (typeof data.reportTitle === 'string') this.exportReportTitle = data.reportTitle;
+            if (typeof data.reportRemark === 'string') this.exportRemark = data.reportRemark;
+            this._reindex();
+            this.searchText = '';
+            this.filterMode = 'all';
+            this.editingCell = { tableIndex: -1, rowId: null, ci: null };
+            this.editingHeaderIdx = -1;
+            this.editingHeaderTableIndex = -1;
+            this.showEditRowModal = false;
+            this.editRowTarget = null;
+            const totalRows = tables.reduce((sum, t) => sum + (t.rows || []).length, 0);
+            this.showToast(`📂 已导入历史数据：${tables.length} 个表，共 ${totalRows} 条`, 'success');
+            return;
+          }
+
+          if (data.version !== 1 || !Array.isArray(data.headers) || !Array.isArray(data.rows) || !Array.isArray(data.schemas)) {
+            throw new Error('不支持的格式或缺少必要字段（version 1: headers/rows/schemas；version 2: tables）');
+          }
+          if (!this.tables.length) { this.tables = [{ id: this._nextTableId++, name: '表1', headers: [], customColIndices: [], schemas: [], rows: [], idCounter: 0, editHistory: [] }]; this.activeTableIndex = 0; }
+          const cur = this.currentTable;
+          if (!cur) return;
+          this._saveUndoSnapshot();
+          cur.headers = data.headers || [];
+          cur.customColIndices = Array.isArray(data.customColIndices) ? data.customColIndices : [];
+          cur.schemas = (data.schemas || []).map(s => ({ name: s.name || '', headers: [...(s.headers || [])] }));
+          const nextIdRef = { val: 1 };
+          cur.rows = (data.rows || []).map(r => normRow(r, nextIdRef));
           const maxId = cur.rows.length ? Math.max(...cur.rows.map(r => r.__id)) : 0;
           cur.idCounter = typeof data.idCounter === 'number' ? Math.max(data.idCounter, maxId) : maxId;
           cur.editHistory = Array.isArray(data.editHistory) ? data.editHistory : [];
+          if (typeof data.reportTitle === 'string') this.exportReportTitle = data.reportTitle;
+          if (typeof data.reportRemark === 'string') this.exportRemark = data.reportRemark;
           this._reindex();
           this.searchText = '';
           this.filterMode = 'all';
-          this.editingCell = { rowId: null, ci: null };
+          this.editingCell = { tableIndex: -1, rowId: null, ci: null };
           this.editingHeaderIdx = -1;
-      this.editingHeaderTableIndex = -1;
+          this.editingHeaderTableIndex = -1;
           this.showEditRowModal = false;
           this.editRowTarget = null;
           this.showToast(`📂 已导入历史数据：${this.rows.length} 条，可继续编辑`, 'success');
@@ -2168,9 +2373,30 @@ grst
     clearTableByIndex(ti) {
       const t = this.tables[ti];
       if (!t || !t.rows.length) return;
-      if (!confirm('确定清空「'+t.name+'」的数据？')) return;
-      t.headers = []; t.customColIndices = []; t.schemas = []; t.rows = []; t.idCounter = 0; t.editHistory = [];
-      this.showToast('🗑️ 已清空「'+t.name+'」', 'warning');
+      if (!confirm('确定清空「'+t.name+'」的数据？表头与格式将保留，可继续追加。')) return;
+      t.rows = [];
+      t.idCounter = 0;
+      t.editHistory = [];
+      this.showToast('🗑️ 已清空「'+t.name+'」数据，表头已保留可继续追加', 'warning');
+    },
+    removeTableByIndex(ti) {
+      if (this.tables.length <= 1) {
+        this.showToast('至少保留一个表', 'warning');
+        return;
+      }
+      const t = this.tables[ti];
+      if (!t) return;
+      if (!confirm('确定删除表「' + (t.name || ('表'+t.id)) + '」？将移除该 Tab 及全部数据，不可恢复。')) return;
+      const wasActive = this.activeTableIndex === ti;
+      this.tables.splice(ti, 1);
+      if (ti < this.activeTableIndex) this.activeTableIndex--;
+      else if (wasActive && this.activeTableIndex >= this.tables.length) this.activeTableIndex = Math.max(0, this.tables.length - 1);
+      this.editingTabIndex = -1;
+      this.editingSchemaIndex = -1;
+      this.editingCell = { tableIndex: -1, rowId: null, ci: null };
+      this.editingHeaderIdx = -1;
+      this.editingHeaderTableIndex = -1;
+      this.showToast('🗑️ 已删除该表', 'warning');
     },
     clearAll() {
       if (this.rows.length > 0 && !confirm('确定清空当前表数据？')) return;
