@@ -47,6 +47,11 @@
     select.input-area, select.input-area-amber, select.input-area-cyan { color:#e2e8f0; }  
     select.input-area option, select.input-area-amber option, select.input-area-cyan option { background:#1e293b; color:#e2e8f0; }  
 
+    /* 公共表格单元格：强制深色背景，避免新增行等场景下显示白底 */
+    .common-table-cell input { background: rgba(15,23,42,0.95) !important; color: #e2e8f0 !important; border: none; }
+    .common-table-cell input::placeholder { color: #64748b; }
+    .common-table-cell input:focus { outline: none; box-shadow: 0 0 0 1px rgba(99,102,241,0.6); }
+
     .drop-zone { border:2px dashed rgba(99,102,241,0.4); background:rgba(15,23,42,0.5); border-radius:12px; transition:all .3s; cursor:pointer; position:relative; }  
     .drop-zone:hover,.drop-zone.drag-over { border-color:#818cf8; background:rgba(99,102,241,0.08); box-shadow:0 0 24px rgba(129,140,248,0.2); }  
     .drop-zone-amber { border:2px dashed rgba(245,158,11,0.4); background:rgba(15,23,42,0.5); border-radius:12px; transition:all .3s; cursor:pointer; position:relative; }  
@@ -665,15 +670,104 @@
         <span class="section-label mb-2">报告标题</span>  
         <input type="text" x-model="exportReportTitle" placeholder="表格内容确认报告（全部）" class="input-area w-full rounded-xl px-4 py-3 text-sm"/>  
       </div>  
-      <div>  
-        <span class="section-label mb-2">备注</span>  
-        <textarea x-model="exportRemark" class="input-area w-full rounded-xl px-4 py-3 text-sm font-mono" rows="8"  
-          placeholder="可选。多行备注将显示在导出 HTML 报告的标题下方，支持换行。"></textarea>  
-      </div>  
-    </div>  
+      <div class="mb-4">
+        <span class="section-label mb-2">备注</span>
+        <textarea x-model="exportRemark" class="input-area w-full rounded-xl px-4 py-3 text-sm font-mono" rows="8"
+          placeholder="可选。多行备注将显示在导出 HTML 报告的标题下方，支持换行。"></textarea>
+      </div>
+      <div>
+        <span class="section-label mb-2">公共表格</span>
+        <span class="ml-2 text-xs text-slate-400">可添加多个，导出 HTML 时全部显示在备注下方</span>
+        <div class="mt-2 flex flex-wrap gap-2 mb-2">
+          <template x-for="(ct, cti) in commonTables" :key="'ctab'+ct.id">
+            <div class="flex items-center rounded-xl overflow-hidden gap-0" :class="activeCommonTableIndex===cti ? 'tab-active-indigo' : 'tab-inactive'">
+              <button type="button" @click="activeCommonTableIndex=cti" class="px-3 py-1.5 text-sm font-medium truncate max-w-[140px]" x-text="ct.name || ('公共表格'+(cti+1))"></button>
+              <button type="button" @click="removeCommonTable(cti)" class="px-2 py-1.5 text-slate-400 hover:text-red-400 text-xs" title="删除此公共表格">×</button>
+            </div>
+          </template>
+          <button type="button" @click="addCommonTable()" class="tab-inactive px-3 py-1.5 text-sm rounded-xl">+ 新增公共表格</button>
+        </div>
+        <div x-show="commonTables.length===0" class="py-4 text-center text-slate-400 text-sm rounded-xl border border-slate-600/50 border-dashed">暂无公共表格，点击「新增公共表格」添加</div>
+        <template x-if="currentCommonTable">
+          <div class="overflow-x-auto rounded-xl border border-slate-600/50 bg-slate-800/30">
+            <div class="p-2 border-b border-slate-600/50 flex items-center gap-2 flex-wrap">
+              <span class="text-slate-400 text-sm">表格名称</span>
+              <input type="text" x-model="currentCommonTable.name" class="input-area rounded-lg px-3 py-1.5 text-sm flex-1 min-w-[120px]" placeholder="公共表格名称"/>
+            </div>
+            <table class="w-full text-sm border-collapse min-w-[200px]">
+              <thead>
+                <tr>
+                  <template x-for="(h, hi) in currentCommonTable.headers" :key="'ch'+hi">
+                    <th class="border border-slate-600/50 px-2 py-1.5 text-left bg-slate-700/50 text-slate-200 font-semibold group">
+                      <div class="flex items-center gap-0.5">
+                        <button type="button" x-show="hi>0" @click="moveCommonTableColLeft(activeCommonTableIndex, hi)" class="text-slate-400 hover:text-indigo-300 text-xs p-0.5 opacity-0 group-hover:opacity-100" title="左移列">←</button>
+                        <input type="text" x-model="currentCommonTable.headers[hi]" class="bg-transparent border-0 flex-1 min-w-[50px] text-slate-200 focus:ring-0 p-0 text-sm" placeholder="列名"/>
+                        <button type="button" x-show="hi<currentCommonTable.headers.length-1" @click="moveCommonTableColRight(activeCommonTableIndex, hi)" class="text-slate-400 hover:text-indigo-300 text-xs p-0.5 opacity-0 group-hover:opacity-100" title="右移列">→</button>
+                        <button type="button" @click="removeCommonTableCol(activeCommonTableIndex, hi)" class="text-slate-400 hover:text-red-400 text-xs p-0.5 opacity-0 group-hover:opacity-100" title="删除此列">✕</button>
+                      </div>
+                    </th>
+                  </template>
+                  <th class="border border-slate-600/50 px-1 py-1 w-20 bg-slate-700/50 text-slate-400 text-xs font-normal">操作</th>
+                </tr>
+              </thead>
+              <tbody>
+                <template x-for="(row, ri) in currentCommonTable.rows" :key="'cr'+ri">
+                  <tr class="bg-slate-800/40 hover:bg-slate-700/40">
+                    <template x-for="(cell, ci) in row" :key="'cc'+ri+'-'+ci">
+                      <td class="common-table-cell border border-slate-600/50 px-2 py-1 bg-slate-800/40">
+                        <input type="text" x-model="currentCommonTable.rows[ri][ci]" class="w-full min-w-[60px] rounded px-1 py-0.5 text-sm" placeholder=""/>
+                      </td>
+                    </template>
+                    <td class="border border-slate-600/50 px-1 py-1 w-20 text-center bg-slate-800/40 align-middle">
+                      <div class="flex items-center justify-center gap-0.5 flex-wrap">
+                        <button type="button" x-show="ri>0" @click="moveCommonTableRowUp(activeCommonTableIndex, ri)" class="text-slate-400 hover:text-indigo-300 text-xs p-0.5" title="上移">↑</button>
+                        <button type="button" x-show="ri<currentCommonTable.rows.length-1" @click="moveCommonTableRowDown(activeCommonTableIndex, ri)" class="text-slate-400 hover:text-indigo-300 text-xs p-0.5" title="下移">↓</button>
+                        <button type="button" @click="removeCommonTableRow(activeCommonTableIndex, ri)" class="text-slate-400 hover:text-red-400 text-xs p-0.5" title="删除此行">✕</button>
+                      </div>
+                    </td>
+                  </tr>
+                </template>
+              </tbody>
+            </table>
+            <div class="p-2 flex flex-wrap gap-2 border-t border-slate-600/50">
+              <button type="button" @click="addCommonTableRow(activeCommonTableIndex)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-600/60 hover:bg-slate-500/60 text-slate-200">+ 添加行</button>
+              <button type="button" @click="addCommonTableCol(activeCommonTableIndex)" class="text-xs px-3 py-1.5 rounded-lg bg-slate-600/60 hover:bg-slate-500/60 text-slate-200">+ 添加列</button>
+              <button type="button" @click="openCommonTableAppendModal()" class="text-xs px-3 py-1.5 rounded-lg bg-emerald-600/60 hover:bg-emerald-500/60 text-white" title="一次性粘贴表头与内容并解析追加">📥 一键追加</button>
+              <button type="button" @click="clearCommonTable(activeCommonTableIndex)" class="text-xs px-3 py-1.5 rounded-lg bg-amber-600/50 hover:bg-amber-500/50 text-amber-100" title="清空当前表的所有行，保留表头">🗑️ 清空当前表</button>
+            </div>
+          </div>
+        </template>
+      </div>
+    </div>
 
-    <!-- ═══ 有数据时显示（每个表独立一块，新建表追加后新表出现在下方） ═══ -->  
-    <div x-show="tables.some(t=>t.rows.length>0)" style="display:none;">  
+    <!-- 公共表格 · 一键追加 弹窗 -->
+    <template x-if="showCommonTableAppendModal">
+      <div class="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm" @click.self="closeCommonTableAppendModal()">
+        <div class="glass-card rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto" @click.stop>
+          <div class="section-title mb-4">
+            <div class="bar" style="background:#34d399;"></div>
+            <span class="text-emerald-300 font-bold text-[15px]">公共表格 · 一键追加</span>
+            <span class="ml-2 text-xs text-slate-400">与主表追加方式一致：表头 + 内容</span>
+          </div>
+          <p class="text-slate-400 text-xs mb-2" x-show="currentCommonTable && currentCommonTable.headers && currentCommonTable.headers.length">当前表头列数：<span x-text="currentCommonTable ? currentCommonTable.headers.length : 0"></span>。留空表头则仅追加数据行（按当前列数解析）。</p>
+          <div class="mb-4">
+            <span class="section-label mb-2">表头</span>
+            <textarea x-model="commonTableAppendHeadInput" class="input-area w-full rounded-xl px-4 py-3 text-sm font-mono" rows="4" placeholder="每行一个列名，或一行内用 Tab 分隔。留空则使用当前表头仅追加数据。"></textarea>
+          </div>
+          <div class="mb-4">
+            <span class="section-label mb-2">内容</span>
+            <textarea x-model="commonTableAppendValInput" class="input-area w-full rounded-xl px-4 py-3 text-sm font-mono" rows="8" placeholder="粘贴数据：每列一行，多记录连续填写（与主表「在当前表追加」格式相同）。"></textarea>
+          </div>
+          <div class="flex flex-wrap gap-3">
+            <button type="button" @click="doCommonTableAppend()" class="btn-success text-white text-sm font-bold px-5 py-2 rounded-xl">📥 解析并追加</button>
+            <button type="button" @click="closeCommonTableAppendModal()" class="btn-secondary text-sm px-5 py-2 rounded-xl">取消</button>
+          </div>
+        </div>
+      </div>
+    </template>
+
+    <!-- ═══ 有数据时显示（每个表独立一块，新建表追加后新表出现在下方） ═══ -->
+    <div x-show="hasAnyTableData" style="display:none;">  
 
       <!-- 搜索/过滤（全局共用） -->  
       <div class="glass-card rounded-2xl px-5 py-3 mb-5 flex flex-wrap items-center gap-3">  
@@ -694,7 +788,7 @@
       <input type="file" accept=".json,application/json" x-ref="importModificationsInputMulti" @change="doImportModifications($event)" style="display:none">  
 
       <!-- 所有表确认统计 -->  
-      <div class="glass-card rounded-2xl px-5 py-4 mb-4" x-show="tables.some(t=>(t.rows&&t.rows.length>0))">  
+      <div class="glass-card rounded-2xl px-5 py-4 mb-4" x-show="hasAnyTableData">  
         <div class="section-title mb-2">  
           <div class="bar" style="background:#34d399;"></div>  
           <span class="text-emerald-300 font-bold text-[15px]">所有表确认统计</span>  
@@ -955,7 +1049,7 @@
           <button @click="currentTable.editHistory=[]" class="ml-auto text-xs text-slate-400 hover:text-slate-300 transition-colors">清空</button>  
         </div>  
         <div class="flex flex-col gap-2 max-h-40 overflow-y-auto">  
-          <template x-for="(h,hi) in (currentTable.editHistory||[]).slice().reverse()" :key="'hist'+currentTable.id+'_'+hi">  
+          <template x-for="(h,hi) in (currentTable.editHistory||[]).slice(-60).reverse()" :key="'hist'+currentTable.id+'_'+hi">  
             <div class="history-item">  
               <div class="history-dot" :style="'background:'+(h.type==='cell'?'#818cf8':h.type==='col-del'?'#f43f5e':h.type==='row-del'?'#f43f5e':h.type==='header'?'#38bdf8':'#fbbf24')"></div>  
               <span class="text-slate-400 text-xs flex-shrink-0" x-text="h.time"></span>  
@@ -970,7 +1064,7 @@
     </div><!-- /有数据时 -->  
 
     <!-- 空状态 -->  
-    <div x-show="!tables.some(t=>t.rows.length>0)" class="text-center py-24 text-slate-400" style="display:none;">  
+    <div x-show="!hasAnyTableData" class="text-center py-24 text-slate-400" style="display:none;">  
       <div class="text-6xl mb-4">📄</div>  
       <div class="text-lg font-semibold text-slate-300">请先导入表头和数据</div>  
       <div class="text-sm text-slate-400 mt-2">支持手动输入 / TXT文件 / 表格样式</div>  
@@ -1006,6 +1100,9 @@ function tableApp() {
     _nextTableId: 2,
     exportReportTitle: '表格内容确认报告（全部）',
     exportRemark: '',
+    commonTables: [ { id: 1, name: '公共表格1', headers: ['列1'], rows: [] } ],
+    _nextCommonTableId: 2,
+    activeCommonTableIndex: 0,
     undoSnapshot: null,
 
     /* ── 表格核心（委托到当前表，保留同名便于模板兼容） ── */  
@@ -1020,6 +1117,11 @@ function tableApp() {
     get idCounter() { return this.currentTable?.idCounter ?? 0; },  
     get editHistory() { return this.currentTable?.editHistory ?? []; },  
     set editHistory(v) { if (this.currentTable) this.currentTable.editHistory = v; },  
+
+    get currentCommonTable() {
+      if (!this.commonTables || !this.commonTables.length) return null;
+      return this.commonTables[this.activeCommonTableIndex] ?? this.commonTables[0];
+    },
 
     /* ── 弹窗 ── */  
     showAddColModal: false, newColName: '', newColDefault: '', newColPosition: -1,  
@@ -1044,6 +1146,10 @@ function tableApp() {
     appendFileName: '',  
     appendDragOver: false,  
 
+    showCommonTableAppendModal: false,  
+    commonTableAppendHeadInput: '',  
+    commonTableAppendValInput: '',  
+
     /* ── 单元格/列头编辑 ── */  
     editingCell: { tableIndex: -1, rowId: null, ci: null },  
     editingHeaderIdx: -1,  
@@ -1056,6 +1162,8 @@ function tableApp() {
 
     /* ── 搜索/过滤 ── */  
     searchText: '', filterMode: 'all',  
+    searchTextFilter: '',  
+    _searchDebounceTimer: null,  
 
     /* ── Toast ── */  
     toast: { show:false, msg:'', type:'info' },  
@@ -1068,6 +1176,7 @@ function tableApp() {
       if (!this.rows.length) return 0;  
       return Math.round(this.confirmedCount/this.rows.length*100);  
     },  
+    get hasAnyTableData() { return this.tables.some(t=>(t.rows&&t.rows.length>0)); },  
     get filteredRows() {  
       let list = this.rows;  
       if (this.filterMode==='confirmed') list=list.filter(r=>r.__confirmed);  
@@ -1077,11 +1186,11 @@ function tableApp() {
         const si=parseInt(this.filterMode.split('_')[1]);  
         list=list.filter(r=>r.__schemaIdx===si);  
       }  
-      const q=this.searchText.trim().toLowerCase();  
+      const q=(this.searchTextFilter||'').trim().toLowerCase();  
       if (q) {  
         list=list.filter(r=>{  
-          const inData=r.__data.some(v=>(v||'').toLowerCase().includes(q));  
-          const inCustom=Object.values(r.__custom).some(v=>(v||'').toLowerCase().includes(q));  
+          const inData=(r.__data||[]).some(v=>(v||'').toLowerCase().includes(q));  
+          const inCustom=Object.values(r.__custom||{}).some(v=>(v||'').toLowerCase().includes(q));  
           return inData||inCustom;  
         });  
       }  
@@ -1155,7 +1264,7 @@ function tableApp() {
         const si=parseInt(this.filterMode.split('_')[1]);  
         list=list.filter(r=>r.__schemaIdx===si);  
       }  
-      const q=this.searchText.trim().toLowerCase();  
+      const q=(this.searchTextFilter||'').trim().toLowerCase();  
       if (q) list=list.filter(r=>{  
         const inData=(r.__data||[]).some(v=>(v||'').toLowerCase().includes(q));  
         const inCustom=Object.values(r.__custom||{}).some(v=>(v||'').toLowerCase().includes(q));  
@@ -1932,6 +2041,33 @@ function tableApp() {
         </tr>`;
       }).join('\n');
 
+      const commonTableHtml = (() => {
+        const list = this.commonTables || [];
+        if (!list.length) return '';
+        return list.map(ct => {
+          const headers = ct.headers || [];
+          if (!headers.length) return '';
+          const thCt = headers.map(h => `<th>${esc(h)}</th>`).join('');
+          const rows = ct.rows || [];
+          const bodyCt = rows.map(row => {
+            const cells = headers.map((_, ci) => esc((row && row[ci]) ?? ''));
+            return '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+          }).join('\n');
+          const tbody = bodyCt || '<tr><td colspan="' + headers.length + '" style="text-align:center;color:#64748b;font-size:13px;">（无行）</td></tr>';
+          const title = esc(ct.name || '公共表格');
+          return `
+<div class="common-table-section" style="margin-bottom:24px;">
+  <div class="schema-title">📎 ${title}</div>
+  <div class="tbl-wrap">
+  <table>
+  <thead><tr>${thCt}</tr></thead>
+  <tbody>${tbody}</tbody>
+  </table>
+  </div>
+</div>`;
+        }).join('\n');
+      })();
+
       const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -1945,6 +2081,7 @@ body{background:#0f172a;color:#cbd5e1;font-family:'Segoe UI',system-ui,sans-seri
 h1{font-size:24px;font-weight:800;margin-bottom:8px;background:linear-gradient(90deg,#818cf8,#38bdf8,#34d399);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
 .meta{font-size:14px;color:#94a3b8;margin-bottom:24px}.meta span{color:#cbd5e1;font-weight:600}
 .report-remark{font-size:13px;color:#94a3b8;margin-bottom:24px;padding:12px 16px;background:rgba(30,41,59,0.6);border-radius:10px;border:1px solid rgba(99,102,241,0.2);white-space:pre-line;line-height:1.6}
+.common-table-section .schema-title{font-size:13px;color:#94a3b8;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
 .stats{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap}
 .stat{background:rgba(30,41,59,0.8);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px 18px;font-size:13px;min-width:100px}
 .stat strong{font-size:20px;font-weight:800;display:block}.stat .lbl{color:#94a3b8;font-size:11px}
@@ -1970,6 +2107,7 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
 <h1>📋 表格内容确认报告</h1>
 <div class="meta">导出时间：<span>${now}</span></div>
 ${(this.exportRemark || '').trim() ? '<div class="report-remark">' + esc((this.exportRemark || '').trim()) + '</div>' : ''}
+${commonTableHtml}
 <div class="stats">
   <div class="stat"><strong style="color:#e2e8f0">${exportRows.length}</strong><div class="lbl">导出总数</div></div>
   <div class="stat"><strong style="color:#34d399">${confirmedCnt}</strong><div class="lbl">已确认</div></div>
@@ -2022,6 +2160,9 @@ h1{font-size:24px;font-weight:800;margin-bottom:8px;background:linear-gradient(9
 h2{font-size:18px;font-weight:700;color:#a5b4fc;margin:28px 0 12px;padding-bottom:8px;border-bottom:1px solid rgba(99,102,241,0.3);}
 .meta{font-size:14px;color:#94a3b8;margin-bottom:24px}.meta span{color:#cbd5e1;font-weight:600}
 .report-remark{font-size:13px;color:#94a3b8;margin-bottom:24px;padding:12px 16px;background:rgba(30,41,59,0.6);border-radius:10px;border:1px solid rgba(99,102,241,0.2);white-space:pre-line;line-height:1.6}
+.common-table-section .schema-title{font-size:13px;color:#94a3b8;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
+.summary-section{margin-bottom:24px}
+.schema-title{font-size:13px;color:#94a3b8;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.05em}
 .stats{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap}
 .stat{background:rgba(30,41,59,0.8);border:1px solid rgba(99,102,241,0.2);border-radius:10px;padding:12px 18px;font-size:13px;min-width:100px}
 .stat strong{font-size:20px;font-weight:800;display:block}.stat .lbl{color:#94a3b8;font-size:11px}
@@ -2092,6 +2233,46 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
       }).join('\n');
 
       const totalRows = tablesWithData.reduce((sum, t) => sum + (t.rows || []).length, 0);
+      const totalConfirmed = tablesWithData.reduce((sum, t) => sum + (t.rows || []).filter(r => r.__confirmed).length, 0);
+      const totalUnconfirmed = totalRows - totalConfirmed;
+      const overallPct = totalRows ? Math.round(totalConfirmed / totalRows * 100) : 0;
+      const commonTableHtml = (() => {
+        const list = this.commonTables || [];
+        if (!list.length) return '';
+        return list.map(ct => {
+          const headers = ct.headers || [];
+          if (!headers.length) return '';
+          const thCt = headers.map(h => `<th>${esc(h)}</th>`).join('');
+          const rows = ct.rows || [];
+          const bodyCt = rows.map(row => {
+            const cells = headers.map((_, ci) => esc((row && row[ci]) ?? ''));
+            return '<tr>' + cells.map(c => `<td>${c}</td>`).join('') + '</tr>';
+          }).join('\n');
+          const tbody = bodyCt || '<tr><td colspan="' + headers.length + '" style="text-align:center;color:#64748b;font-size:13px;">（无行）</td></tr>';
+          const title = esc(ct.name || '公共表格');
+          return `
+<div class="common-table-section" style="margin-bottom:24px;">
+  <div class="schema-title">📎 ${title}</div>
+  <div class="tbl-wrap">
+  <table>
+  <thead><tr>${thCt}</tr></thead>
+  <tbody>${tbody}</tbody>
+  </table>
+  </div>
+</div>`;
+        }).join('\n');
+      })();
+      const summaryStatsHtml = `
+<div class="summary-section">
+  <div class="schema-title">📊 汇总</div>
+  <div class="stats">
+    <div class="stat"><strong style="color:#e2e8f0">${totalRows}</strong><div class="lbl">总记录</div></div>
+    <div class="stat"><strong style="color:#34d399">${totalConfirmed}</strong><div class="lbl">已确认</div></div>
+    <div class="stat"><strong style="color:#fbbf24">${totalUnconfirmed}</strong><div class="lbl">未确认</div></div>
+    <div class="stat"><strong style="color:#818cf8">${overallPct}%</strong><div class="lbl">确认率</div></div>
+    <div class="stat"><strong style="color:#38bdf8">${tablesWithData.length}</strong><div class="lbl">表数</div></div>
+  </div>
+</div>`;
       const html = `<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
@@ -2103,8 +2284,10 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
 <body>
 <div class="report-wrap">
 <h1>📋 ${esc(this.exportReportTitle || '表格内容确认报告（全部）')}</h1>
-<div class="meta">导出时间：<span>${now}</span> · 共 <strong>${tablesWithData.length}</strong> 个表 · 合计 <strong>${totalRows}</strong> 条记录</div>
+<div class="meta">导出时间：<span>${now}</span></div>
 ${(this.exportRemark || '').trim() ? '<div class="report-remark">' + esc((this.exportRemark || '').trim()) + '</div>' : ''}
+${commonTableHtml}
+${summaryStatsHtml}
 ${sections}
 <footer>由「表格内容确认工具 v3」生成 · 导出所有表格 · ${now}</footer>
 </div>
@@ -2179,6 +2362,7 @@ grst
         exportedAt: new Date().toISOString(),
         reportTitle: this.exportReportTitle,
         reportRemark: this.exportRemark,
+        commonTables: this._exportCommonTables(),
         headers: [...this.headers],
         customColIndices: [...this.customColIndices],
         schemas: this.schemas.map(s => ({ name: s.name, headers: [...s.headers] })),
@@ -2216,6 +2400,7 @@ grst
         exportedAt: new Date().toISOString(),
         reportTitle: this.exportReportTitle,
         reportRemark: this.exportRemark,
+        commonTables: this._exportCommonTables(),
         tables: this.tables.map(t => ({
           id: t.id,
           name: t.name || ('表' + t.id),
@@ -2255,6 +2440,10 @@ grst
         tables: JSON.parse(JSON.stringify(this.tables)),
         activeTableIndex: this.activeTableIndex,
         _nextTableId: this._nextTableId,
+        exportReportTitle: this.exportReportTitle,
+        exportRemark: this.exportRemark,
+        commonTables: JSON.parse(JSON.stringify(this.commonTables || [])),
+        _nextCommonTableId: this._nextCommonTableId,
       };
     },
     undoLastImport() {
@@ -2262,9 +2451,13 @@ grst
       this.tables = JSON.parse(JSON.stringify(this.undoSnapshot.tables));
       this.activeTableIndex = this.undoSnapshot.activeTableIndex;
       this._nextTableId = this.undoSnapshot._nextTableId;
+      if (Array.isArray(this.undoSnapshot.commonTables)) this.commonTables = JSON.parse(JSON.stringify(this.undoSnapshot.commonTables));
+      if (typeof this.undoSnapshot._nextCommonTableId === 'number') this._nextCommonTableId = this.undoSnapshot._nextCommonTableId;
+      if (typeof this.undoSnapshot.exportReportTitle === 'string') this.exportReportTitle = this.undoSnapshot.exportReportTitle;
+      if (typeof this.undoSnapshot.exportRemark === 'string') this.exportRemark = this.undoSnapshot.exportRemark;
       this.undoSnapshot = null;
       this._reindex();
-      this.searchText = '';
+      this.searchText = ''; this.searchTextFilter = '';
       this.filterMode = 'all';
       this.editingCell = { tableIndex: -1, rowId: null, ci: null };
       this.editingHeaderIdx = -1;
@@ -2322,8 +2515,9 @@ grst
             this.activeTableIndex = 0;
             if (typeof data.reportTitle === 'string') this.exportReportTitle = data.reportTitle;
             if (typeof data.reportRemark === 'string') this.exportRemark = data.reportRemark;
+            this._applyImportedCommonTables(data);
             this._reindex();
-            this.searchText = '';
+            this.searchText = ''; this.searchTextFilter = '';
             this.filterMode = 'all';
             this.editingCell = { tableIndex: -1, rowId: null, ci: null };
             this.editingHeaderIdx = -1;
@@ -2352,8 +2546,9 @@ grst
           cur.editHistory = Array.isArray(data.editHistory) ? data.editHistory : [];
           if (typeof data.reportTitle === 'string') this.exportReportTitle = data.reportTitle;
           if (typeof data.reportRemark === 'string') this.exportRemark = data.reportRemark;
+          this._applyImportedCommonTables(data);
           this._reindex();
-          this.searchText = '';
+          this.searchText = ''; this.searchTextFilter = '';
           this.filterMode = 'all';
           this.editingCell = { tableIndex: -1, rowId: null, ci: null };
           this.editingHeaderIdx = -1;
@@ -2366,6 +2561,195 @@ grst
         }
       };
       reader.readAsText(file, 'UTF-8');
+    },
+
+    /* ════════════════════ 公共表格 ════════════════════ */
+
+    _exportCommonTables() {
+      return (this.commonTables || []).map(ct => ({
+        id: ct.id,
+        name: ct.name || '',
+        headers: [...(ct.headers || [])],
+        rows: (ct.rows || []).map(row => [...row]),
+      }));
+    },
+
+    _applyImportedCommonTables(data) {
+      if (Array.isArray(data.commonTables) && data.commonTables.length > 0) {
+        this.commonTables = data.commonTables.map((ct, idx) => ({
+          id: typeof ct.id === 'number' ? ct.id : idx + 1,
+          name: typeof ct.name === 'string' ? ct.name : ('公共表格' + (idx + 1)),
+          headers: Array.isArray(ct.headers) && ct.headers.length ? [...ct.headers] : ['列1'],
+          rows: (ct.rows || []).map(row => Array.isArray(row) ? [...row] : []),
+        }));
+        this._nextCommonTableId = Math.max(...this.commonTables.map(ct => ct.id), 0) + 1;
+        this.activeCommonTableIndex = 0;
+        return;
+      }
+      if (Array.isArray(data.commonTableHeaders) || Array.isArray(data.commonTableRows)) {
+        this.commonTables = [{
+          id: 1,
+          name: '公共表格1',
+          headers: Array.isArray(data.commonTableHeaders) && data.commonTableHeaders.length ? [...data.commonTableHeaders] : ['列1'],
+          rows: (data.commonTableRows || []).map(row => Array.isArray(row) ? [...row] : []),
+        }];
+        this._nextCommonTableId = 2;
+        this.activeCommonTableIndex = 0;
+      }
+    },
+
+    addCommonTable() {
+      const name = '公共表格' + (this.commonTables.length + 1);
+      this.commonTables.push({ id: this._nextCommonTableId++, name, headers: ['列1'], rows: [] });
+      this.activeCommonTableIndex = this.commonTables.length - 1;
+      this.showToast('已新增公共表格', 'success');
+    },
+    removeCommonTable(cti) {
+      if (this.commonTables.length <= 1) {
+        this.showToast('至少保留一个公共表格', 'warning');
+        return;
+      }
+      this.commonTables.splice(cti, 1);
+      if (cti <= this.activeCommonTableIndex && this.activeCommonTableIndex > 0) this.activeCommonTableIndex--;
+      if (this.activeCommonTableIndex >= this.commonTables.length) this.activeCommonTableIndex = this.commonTables.length - 1;
+      this.showToast('已删除该公共表格', 'warning');
+    },
+    clearCommonTable(cti) {
+      const ct = this.commonTables[cti];
+      if (!ct) return;
+      if (ct.rows.length && !confirm('确定清空「' + (ct.name || '公共表格') + '」的所有行？表头保留。')) return;
+      ct.rows = [];
+      this.showToast('已清空当前公共表格', 'warning');
+    },
+    addCommonTableRow(cti) {
+      const ct = this.commonTables[cti];
+      if (!ct || !ct.headers) return;
+      const len = ct.headers.length;
+      ct.rows = ct.rows || [];
+      ct.rows.push(Array(len).fill(''));
+    },
+    addCommonTableCol(cti) {
+      const ct = this.commonTables[cti];
+      if (!ct) return;
+      ct.headers = ct.headers || [];
+      const newLabel = '列' + (ct.headers.length + 1);
+      ct.headers.push(newLabel);
+      (ct.rows || []).forEach(row => row.push(''));
+    },
+    removeCommonTableRow(cti, ri) {
+      const ct = this.commonTables[cti];
+      if (!ct || !ct.rows) return;
+      ct.rows.splice(ri, 1);
+    },
+    removeCommonTableCol(cti, ci) {
+      const ct = this.commonTables[cti];
+      if (!ct || !ct.headers || ct.headers.length <= 1) {
+        if (ct && ct.headers && ct.headers.length <= 1) this.showToast('至少保留一列', 'warning');
+        return;
+      }
+      ct.headers.splice(ci, 1);
+      (ct.rows || []).forEach(row => row.splice(ci, 1));
+    },
+    moveCommonTableRowUp(cti, ri) {
+      if (ri <= 0) return;
+      const ct = this.commonTables[cti];
+      if (!ct || !ct.rows) return;
+      const row = ct.rows[ri];
+      ct.rows[ri] = ct.rows[ri - 1];
+      ct.rows[ri - 1] = row;
+    },
+    moveCommonTableRowDown(cti, ri) {
+      const ct = this.commonTables[cti];
+      if (!ct || !ct.rows || ri >= ct.rows.length - 1) return;
+      const row = ct.rows[ri];
+      ct.rows[ri] = ct.rows[ri + 1];
+      ct.rows[ri + 1] = row;
+    },
+    moveCommonTableColLeft(cti, ci) {
+      if (ci <= 0) return;
+      const ct = this.commonTables[cti];
+      if (!ct || !ct.headers) return;
+      const h = ct.headers[ci];
+      ct.headers[ci] = ct.headers[ci - 1];
+      ct.headers[ci - 1] = h;
+      (ct.rows || []).forEach(row => {
+        const v = row[ci];
+        row[ci] = row[ci - 1];
+        row[ci - 1] = v;
+      });
+    },
+    moveCommonTableColRight(cti, ci) {
+      const ct = this.commonTables[cti];
+      if (!ct || !ct.headers || ci >= ct.headers.length - 1) return;
+      const h = ct.headers[ci];
+      ct.headers[ci] = ct.headers[ci + 1];
+      ct.headers[ci + 1] = h;
+      (ct.rows || []).forEach(row => {
+        const v = row[ci];
+        row[ci] = row[ci + 1];
+        row[ci + 1] = v;
+      });
+    },
+
+    openCommonTableAppendModal() {
+      if (!this.currentCommonTable) return;
+      this.commonTableAppendHeadInput = '';
+      this.commonTableAppendValInput = '';
+      this.showCommonTableAppendModal = true;
+    },
+    closeCommonTableAppendModal() {
+      this.showCommonTableAppendModal = false;
+      this.commonTableAppendHeadInput = '';
+      this.commonTableAppendValInput = '';
+    },
+    doCommonTableAppend() {
+      const ct = this.currentCommonTable;
+      if (!ct) return;
+      if (!this.commonTableAppendValInput.trim()) {
+        this.showToast('内容不能为空', 'warning');
+        return;
+      }
+      let headers = [];
+      const headTrim = (this.commonTableAppendHeadInput || '').trim();
+      if (headTrim) {
+        if (headTrim.includes('\n')) {
+          headers = this._parseHeadRaw(headTrim);
+        } else if (headTrim.includes('\t')) {
+          headers = headTrim.split('\t').map(s => s.trim()).filter(Boolean);
+        } else {
+          headers = [headTrim];
+        }
+      }
+      const colCount = headers.length > 0 ? headers.length : (ct.headers && ct.headers.length ? ct.headers.length : 0);
+      if (!colCount) {
+        this.showToast('请填写表头，或当前公共表格需先有列', 'warning');
+        return;
+      }
+      const records = this._parseValLines(this.commonTableAppendValInput, colCount);
+      if (!records.length) {
+        this.showToast('未解析到有效记录', 'warning');
+        return;
+      }
+      ct.headers = ct.headers || [];
+      ct.rows = ct.rows || [];
+      if (headers.length > 0) {
+        if (ct.headers.length === 0) {
+          ct.headers = [...headers];
+        } else if (headers.length > ct.headers.length) {
+          for (let k = ct.headers.length; k < headers.length; k++) {
+            ct.headers.push(headers[k] || ('列' + (k + 1)));
+          }
+          ct.rows.forEach(row => { while (row.length < ct.headers.length) row.push(''); });
+        }
+      }
+      const len = ct.headers.length;
+      records.forEach(cells => {
+        const row = cells.slice(0, len);
+        while (row.length < len) row.push('');
+        ct.rows.push(row);
+      });
+      this.closeCommonTableAppendModal();
+      this.showToast('✅ 已追加 ' + records.length + ' 行到「' + (ct.name || '公共表格') + '」', 'success');
     },
 
     /* ════════════════════ 清空重置 ════════════════════ */
@@ -2409,7 +2793,7 @@ grst
         this.currentTable.schemas = []; this.currentTable.rows = []; this.currentTable.idCounter = 0;
         this.currentTable.editHistory = [];
       }
-      this.searchText = ''; this.filterMode = 'all';
+      this.searchText = ''; this.searchTextFilter = ''; this.filterMode = 'all';
       this.editingCell = { rowId: null, ci: null };
       this.editingHeaderIdx = -1;
       this.editingHeaderTableIndex = -1;
@@ -2423,6 +2807,14 @@ grst
       if (this._toastTimer) clearTimeout(this._toastTimer);
       this.toast = { show: true, msg, type };
       this._toastTimer = setTimeout(() => { this.toast.show = false; }, 3200);
+    },
+
+    init() {
+      this.searchTextFilter = this.searchText;
+      this.$watch('searchText', value => {
+        clearTimeout(this._searchDebounceTimer);
+        this._searchDebounceTimer = setTimeout(() => { this.searchTextFilter = value; }, 280);
+      });
     },
 
   }; // end return
