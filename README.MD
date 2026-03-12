@@ -56,7 +56,7 @@
 
 ### 启动
 
-- 本地需有：`TableCheck.html`、`tailwind.css`、`alpine.min.js`。
+- 本地需有：`TableCheck.html`、`tailwind.css`、`alpine.min.js`（后两者需与 HTML 同目录，或自行修改 HTML 中的引用路径）。
 - 用浏览器直接打开 `TableCheck.html`（推荐 Chrome / Edge）。
 
 ### 导入数据
@@ -98,8 +98,15 @@
 
 ## 项目结构
 
-- 单页无构建：主文件 `TableCheck.html`，依赖 `tailwind.css`、`alpine.min.js`。
-- 逻辑在 `tableApp()` 中：多表 `tables[]`、`activeTableIndex`、当前表 getter、导入解析、编辑与确认、各类导出/导入及撤消。
+| 文件 | 说明 |
+|------|------|
+| `TableCheck.html` | 主页面，包含全部 UI 与 `tableApp()` 逻辑 |
+| `tailwind.css` | Tailwind 样式（需自行放入同目录或修改引用） |
+| `alpine.min.js` | Alpine.js 框架（需自行放入同目录或修改引用） |
+| `tablehead.txt` | 示例表头文本，可用于「数据导入」测试 |
+| `tableval.txt` | 示例数据文本（如寄存器表），可与表头一起解析 |
+
+- 逻辑集中在 `tableApp()` 中：多表 `tables[]`、`activeTableIndex`、当前表 getter、导入解析、编辑与确认、各类导出/导入及撤消。
 
 ---
 
