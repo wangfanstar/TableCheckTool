@@ -146,6 +146,15 @@
     tbody tr:nth-child(even) .cell-annotated { background: rgba(168,85,247,0.12) !important; }
     tbody tr:nth-child(even) .cell-annotated:hover { background: rgba(168,85,247,0.2) !important; }
     .cell-annotated .cell-annotated-dot { color: #a855f7; font-size: 10px; margin-left: 4px; flex-shrink: 0; cursor: help; }
+    /* 标注悬停提示：字体约为正文两倍 */
+    .annotation-tooltip-popup {
+      position: fixed; z-index: 600; pointer-events: none;
+      max-width: 420px; padding: 12px 16px; border-radius: 10px;
+      background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
+      border: 1px solid rgba(168,85,247,0.5); box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+      color: #e2e8f0; line-height: 1.5; white-space: pre-wrap; word-break: break-word;
+      font-size: 2em; font-weight: 500;
+    }
 
     .badge-confirmed { background:linear-gradient(135deg,#059669,#047857); color:white; font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; box-shadow:0 2px 8px rgba(5,150,105,0.4); white-space:nowrap; }  
     .badge-pending { background:rgba(71,85,105,0.6); color:#94a3b8; font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; white-space:nowrap; }  
@@ -228,6 +237,11 @@
   <template x-if="toast.show">  
     <div class="toast" :class="'toast-'+toast.type" x-text="toast.msg"></div>  
   </template>  
+
+  <!-- ══ 标注悬停提示（字体放大一倍显示） ══ -->
+  <div class="annotation-tooltip-popup" x-show="annotationTooltip.show" x-transition
+    :style="'left:'+annotationTooltip.x+'px;top:'+annotationTooltip.y+'px'"
+    x-text="annotationTooltip.text"></div>
 
   <!-- ══ 右键菜单 ══ -->  
   <div class="ctx-menu" x-show="ctxMenu.show" style="display:none;"  
@@ -1028,7 +1042,8 @@
                   <template x-for="(col,ci) in currentTable.headers" :key="'c'+currentTable.id+'_'+row.__id+'_'+ci">  
                     <td @contextmenu.prevent.stop="openCtxMenuRow($event,row,ci)" @dblclick.stop="startCellEdit(row,ci,activeTableIndex)"  
                         :class="getCellAnnotation(row,ci) ? 'cell-annotated' : ''"  
-                        :title="getCellAnnotation(row,ci) || null">  
+                        @mouseenter="getCellAnnotation(row,ci) && showAnnotationTooltip($event, getCellAnnotation(row,ci))"  
+                        @mouseleave="hideAnnotationTooltip()">  
                       <template x-if="editingCell.tableIndex===activeTableIndex && editingCell.rowId===row.__id && editingCell.ci===ci">  
                         <div>  
                           <textarea class="cell-input" rows="2"  
@@ -1043,7 +1058,7 @@
                       <template x-if="!(editingCell.tableIndex===activeTableIndex && editingCell.rowId===row.__id && editingCell.ci===ci)">  
                         <div class="cell-view">  
                           <span class="cell-text text-xs leading-relaxed" x-text="getCellValueForTable(row,ci,currentTable)"></span>  
-                          <span x-show="getCellAnnotation(row,ci)" class="cell-annotated-dot" :title="getCellAnnotation(row,ci)">📌</span>  
+                          <span x-show="getCellAnnotation(row,ci)" class="cell-annotated-dot">📌</span>  
                           <span class="cell-edit-icon" @click.stop="startCellEdit(row,ci,activeTableIndex)">✏️</span>  
                         </div>  
                       </template>  
@@ -1161,7 +1176,8 @@ function tableApp() {
     exportSchemaFilter: [],  
     showDelColModal: false, delColTarget: { ci:-1, name:'', isCustom:false },  
     showEditRowModal: false, editRowTarget: null, editRowData: {},  
-    showAnnotationModal: false, annotationInput: '', _annotationTarget: { row: null, ci: null },  
+    showAnnotationModal: false, annotationInput: '', _annotationTarget: { row: null, ci: null },
+    annotationTooltip: { show: false, text: '', x: 0, y: 0 },  
 
     /* ── 追加 ── */  
     showAppendModal: false,  
@@ -1364,6 +1380,18 @@ function tableApp() {
       if (!this.ctxMenu.row || this.ctxMenu.ci === null) return;
       this.setCellAnnotation(this.ctxMenu.row, this.ctxMenu.ci, '');
       this.showToast('已清除标注', 'info');
+    },
+    showAnnotationTooltip(ev, text) {
+      if (!text || !text.trim()) return;
+      const pad = 14;
+      let x = ev.clientX + pad, y = ev.clientY + pad;
+      const maxW = 420; const maxRight = window.innerWidth - maxW - 20;
+      if (x > maxRight) x = ev.clientX - maxW - pad;
+      if (y > window.innerHeight - 120) y = ev.clientY - 80;
+      this.annotationTooltip = { show: true, text: text.trim(), x, y };
+    },
+    hideAnnotationTooltip() {
+      this.annotationTooltip.show = false;
     },
 
     /* ════════════════════ 工具函数 ════════════════════ */
@@ -2122,9 +2150,8 @@ function tableApp() {
           const ci = this.headers.indexOf(h);
           const cellVal = this.getCellValue(row, ci);
           const ann = getExportAnn(row, ci);
-          const tdClass = ann ? ' class="cell-annotated"' : '';
-          const tdTitle = ann ? ' title="' + esc(ann) + '"' : '';
-          return `<td${tdClass}${tdTitle}>${esc(cellVal)}</td>`;
+          const tdAttrs = ann ? ' class="cell-annotated" data-annotation="' + esc(ann) + '" onmouseenter="showExportAnnotationTooltip(this,event)" onmouseleave="hideExportAnnotationTooltip()"' : '';
+          return `<td${tdAttrs}>${esc(cellVal)}</td>`;
         }).join('');
         const rs = row.__confirmed
           ? 'style="background:rgba(5,150,105,0.08);border-left:3px solid #059669;"'
@@ -2136,6 +2163,14 @@ function tableApp() {
           <td style="text-align:center;">${badge}</td>
         </tr>`;
       }).join('\n');
+
+      const exportAnnotationTooltipScript = `
+function showExportAnnotationTooltip(el,e){var t=el.getAttribute('data-annotation');if(!t)return;var p=document.getElementById('export-annotation-tooltip');if(!p)return;p.textContent=t;p.style.left=(e.clientX+14)+'px';p.style.top=(e.clientY+14)+'px';p.style.display='block';}
+function hideExportAnnotationTooltip(){var p=document.getElementById('export-annotation-tooltip');if(p)p.style.display='none';}
+`;
+      const exportAnnotationTooltipCss = `
+.annotation-tooltip-popup{position:fixed;z-index:600;pointer-events:none;display:none;max-width:420px;padding:12px 16px;border-radius:10px;background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid rgba(168,85,247,0.5);box-shadow:0 8px 32px rgba(0,0,0,0.5);color:#e2e8f0;line-height:1.5;white-space:pre-wrap;word-break:break-word;font-size:2em;font-weight:500;}
+`;
 
       const commonTableHtml = (() => {
         const list = this.commonTables || [];
@@ -2195,6 +2230,7 @@ tbody tr:hover td{background:rgba(99,102,241,0.08)!important}
 td.cell-annotated{background:rgba(168,85,247,0.15)!important;border-left:3px solid #a855f7}
 tbody tr:nth-child(even) td.cell-annotated{background:rgba(168,85,247,0.12)!important}
 td.cell-annotated:hover{background:rgba(168,85,247,0.22)!important}
+${exportAnnotationTooltipCss}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:#1e293b}
 ::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
@@ -2202,6 +2238,7 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
 </style>
 </head>
 <body>
+<div id="export-annotation-tooltip" class="annotation-tooltip-popup"></div>
 <div class="report-wrap">
 <h1>📋 表格内容确认报告</h1>
 <div class="meta">导出时间：<span>${now}</span></div>
@@ -2227,6 +2264,7 @@ ${schemaStats.length > 1 ? `
 </div>
 <footer>由「表格内容确认工具 v3」生成 · ${now}</footer>
 </div>
+<script>${exportAnnotationTooltipScript}</script>
 </body>
 </html>`;
 
@@ -2276,10 +2314,15 @@ tbody tr:hover td{background:rgba(99,102,241,0.08)!important}
 td.cell-annotated{background:rgba(168,85,247,0.15)!important;border-left:3px solid #a855f7}
 tbody tr:nth-child(even) td.cell-annotated{background:rgba(168,85,247,0.12)!important}
 td.cell-annotated:hover{background:rgba(168,85,247,0.22)!important}
+.annotation-tooltip-popup{position:fixed;z-index:600;pointer-events:none;display:none;max-width:420px;padding:12px 16px;border-radius:10px;background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid rgba(168,85,247,0.5);box-shadow:0 8px 32px rgba(0,0,0,0.5);color:#e2e8f0;line-height:1.5;white-space:pre-wrap;word-break:break-word;font-size:2em;font-weight:500;}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:#1e293b}
 ::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
 footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
+`;
+      const exportAllAnnotationScript = `
+function showExportAnnotationTooltip(el,e){var t=el.getAttribute('data-annotation');if(!t)return;var p=document.getElementById('export-annotation-tooltip');if(!p)return;p.textContent=t;p.style.left=(e.clientX+14)+'px';p.style.top=(e.clientY+14)+'px';p.style.display='block';}
+function hideExportAnnotationTooltip(){var p=document.getElementById('export-annotation-tooltip');if(p)p.style.display='none';}
 `;
       const sections = tablesWithData.map((t, tableIdx) => {
         const exportHeaders = t.headers || [];
@@ -2307,9 +2350,8 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
           const cells = exportHeaders.map((h, hi) => {
             const cellVal = this.getCellValueForTable(row, hi, t);
             const ann = getExportAnn(row, hi);
-            const tdClass = ann ? ' class="cell-annotated"' : '';
-            const tdTitle = ann ? ' title="' + esc(ann) + '"' : '';
-            return `<td${tdClass}${tdTitle}>${esc(cellVal)}</td>`;
+            const tdAttrs = ann ? ' class="cell-annotated" data-annotation="' + esc(ann) + '" onmouseenter="showExportAnnotationTooltip(this,event)" onmouseleave="hideExportAnnotationTooltip()"' : '';
+            return `<td${tdAttrs}>${esc(cellVal)}</td>`;
           }).join('');
           const rs = row.__confirmed
             ? 'style="background:rgba(5,150,105,0.08);border-left:3px solid #059669;"'
@@ -2392,6 +2434,7 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
 <style>${reportStyles}</style>
 </head>
 <body>
+<div id="export-annotation-tooltip" class="annotation-tooltip-popup"></div>
 <div class="report-wrap">
 <h1>📋 ${esc(this.exportReportTitle || '表格内容确认报告（全部）')}</h1>
 <div class="meta">导出时间：<span>${now}</span></div>
@@ -2401,6 +2444,7 @@ ${summaryStatsHtml}
 ${sections}
 <footer>由「表格内容确认工具 v3」生成 · 导出所有表格 · ${now}</footer>
 </div>
+<script>${exportAllAnnotationScript}</script>
 </body>
 </html>`;
 
