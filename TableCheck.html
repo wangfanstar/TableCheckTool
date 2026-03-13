@@ -2165,11 +2165,11 @@ function tableApp() {
       }).join('\n');
 
       const exportAnnotationTooltipScript = `
-function showExportAnnotationTooltip(el,e){var t=el.getAttribute('data-annotation');if(!t)return;var p=document.getElementById('export-annotation-tooltip');if(!p)return;p.textContent=t;p.style.left=(e.clientX+14)+'px';p.style.top=(e.clientY+14)+'px';p.style.display='block';}
+function showExportAnnotationTooltip(el,e){var t=el.getAttribute('data-annotation');if(!t)return;var p=document.getElementById('export-annotation-tooltip');if(!p)return;p.textContent=t;p.style.left=(e.clientX+14)+'px';p.style.top=(e.clientY+14)+'px';p.style.display='block';p.style.fontSize='32px';p.style.fontWeight='500';}
 function hideExportAnnotationTooltip(){var p=document.getElementById('export-annotation-tooltip');if(p)p.style.display='none';}
 `;
       const exportAnnotationTooltipCss = `
-.annotation-tooltip-popup{position:fixed;z-index:600;pointer-events:none;display:none;max-width:420px;padding:12px 16px;border-radius:10px;background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid rgba(168,85,247,0.5);box-shadow:0 8px 32px rgba(0,0,0,0.5);color:#e2e8f0;line-height:1.5;white-space:pre-wrap;word-break:break-word;font-size:2em;font-weight:500;}
+#export-annotation-tooltip{position:fixed;z-index:600;pointer-events:none;display:none;max-width:420px;padding:12px 16px;border-radius:10px;background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid rgba(168,85,247,0.5);box-shadow:0 8px 32px rgba(0,0,0,0.5);color:#e2e8f0;line-height:1.5;white-space:pre-wrap;word-break:break-word;font-size:32px !important;font-weight:500;}
 `;
 
       const commonTableHtml = (() => {
@@ -2238,7 +2238,7 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
 </style>
 </head>
 <body>
-<div id="export-annotation-tooltip" class="annotation-tooltip-popup"></div>
+<div id="export-annotation-tooltip"></div>
 <div class="report-wrap">
 <h1>📋 表格内容确认报告</h1>
 <div class="meta">导出时间：<span>${now}</span></div>
@@ -2264,7 +2264,7 @@ ${schemaStats.length > 1 ? `
 </div>
 <footer>由「表格内容确认工具 v3」生成 · ${now}</footer>
 </div>
-<script>${exportAnnotationTooltipScript}</script>
+<script>${exportAnnotationTooltipScript}</scr` + `ipt>
 </body>
 </html>`;
 
@@ -2314,14 +2314,14 @@ tbody tr:hover td{background:rgba(99,102,241,0.08)!important}
 td.cell-annotated{background:rgba(168,85,247,0.15)!important;border-left:3px solid #a855f7}
 tbody tr:nth-child(even) td.cell-annotated{background:rgba(168,85,247,0.12)!important}
 td.cell-annotated:hover{background:rgba(168,85,247,0.22)!important}
-.annotation-tooltip-popup{position:fixed;z-index:600;pointer-events:none;display:none;max-width:420px;padding:12px 16px;border-radius:10px;background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid rgba(168,85,247,0.5);box-shadow:0 8px 32px rgba(0,0,0,0.5);color:#e2e8f0;line-height:1.5;white-space:pre-wrap;word-break:break-word;font-size:2em;font-weight:500;}
+#export-annotation-tooltip{position:fixed;z-index:600;pointer-events:none;display:none;max-width:420px;padding:12px 16px;border-radius:10px;background:linear-gradient(135deg,#1e293b,#0f172a);border:1px solid rgba(168,85,247,0.5);box-shadow:0 8px 32px rgba(0,0,0,0.5);color:#e2e8f0;line-height:1.5;white-space:pre-wrap;word-break:break-word;font-size:32px !important;font-weight:500;}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:#1e293b}
 ::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
 footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
 `;
       const exportAllAnnotationScript = `
-function showExportAnnotationTooltip(el,e){var t=el.getAttribute('data-annotation');if(!t)return;var p=document.getElementById('export-annotation-tooltip');if(!p)return;p.textContent=t;p.style.left=(e.clientX+14)+'px';p.style.top=(e.clientY+14)+'px';p.style.display='block';}
+function showExportAnnotationTooltip(el,e){var t=el.getAttribute('data-annotation');if(!t)return;var p=document.getElementById('export-annotation-tooltip');if(!p)return;p.textContent=t;p.style.left=(e.clientX+14)+'px';p.style.top=(e.clientY+14)+'px';p.style.display='block';p.style.fontSize='32px';p.style.fontWeight='500';}
 function hideExportAnnotationTooltip(){var p=document.getElementById('export-annotation-tooltip');if(p)p.style.display='none';}
 `;
       const sections = tablesWithData.map((t, tableIdx) => {
@@ -2434,7 +2434,7 @@ function hideExportAnnotationTooltip(){var p=document.getElementById('export-ann
 <style>${reportStyles}</style>
 </head>
 <body>
-<div id="export-annotation-tooltip" class="annotation-tooltip-popup"></div>
+<div id="export-annotation-tooltip"></div>
 <div class="report-wrap">
 <h1>📋 ${esc(this.exportReportTitle || '表格内容确认报告（全部）')}</h1>
 <div class="meta">导出时间：<span>${now}</span></div>
@@ -2444,7 +2444,7 @@ ${summaryStatsHtml}
 ${sections}
 <footer>由「表格内容确认工具 v3」生成 · 导出所有表格 · ${now}</footer>
 </div>
-<script>${exportAllAnnotationScript}</script>
+<script>${exportAllAnnotationScript}</scr` + `ipt>
 </body>
 </html>`;
 
