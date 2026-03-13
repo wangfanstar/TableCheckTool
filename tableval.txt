@@ -1,0 +1,117 @@
+0x170
+CFG_RLM
+1	
+【static】RLM config ,include EN/TX_AFIFO_THRE
+grst	
+[0:22](RW)	
+0x171
+CFG_RLM_FAULT_SDS_LANE
+1	
+【dynamic】The lane number of the Serdes problem in the software configuration
+grst	
+[0:15](RW)	
+0x172
+CFG_RLM_LANE_SWAP
+1	
+【static】serdes lane swap
+grst	
+[0:47](RW)	
+0x173
+CFG_RLM_AM_PERIOD
+1	
+【static】RLM AM PERIOD
+grst	
+[0:3](RW)	
+0x174
+CFG_RLM_SDS_TX_VLD
+1	
+【static】The duration of serdes_tx_vld being pulled down
+grst	
+[0:9](RW)	
+0x175
+CFG_RLM_LANE_LOCK
+1	
+【static】RLM LANE LOCK module compares threshold and error threshold
+grst	
+[0:9](RW)	
+0x176
+CFG_RLM_SDS_FAULT_MASK
+1	
+【dynamic】Block RXserdes fault
+grst	
+[0:31](RW)	
+0x177
+CFG_RLM_RX_UE_FAULT_TH
+1	
+【static】Continuous UE error fault configuration threshold
+grst	
+[0:4](RW)	
+0x178
+CFG_RLM_CRC_CHECK
+1	
+【static】Continuous crc error fault configuration threshold
+grst	
+[0:5](RW)	
+0x179
+CFG_RLM_RST
+1	
+【dynamic】Software controlled reset of RLM
+grst	
+[0:63](RW)	
+0x17a
+RLM_RX_LINK_STATUS
+1	
+Indications to link status for all 8  channels
+grst	
+[0:3](R)	
+0x17b
+RLM_EXCEED_DSK_CAPABILITY
+1	
+grst	
+[0:7](R)	
+0x17c
+RLM_SWITCH_FSM_STATUS
+1	
+grst	
+[0:31](R)	
+0x17d
+RLM_FAULT_LANE_STATUS
+1	
+grst	
+[0:15](R)
+
+0x18c
+RLM_SWITCH_CODE_STAT_CNT
+1	
+switch code stat
+grst	
+[0:63](R)	
+0x18d
+RLM_RX_FAULT_CODE_STAT_CNT
+1	
+fault code stat
+grst	
+[0:63](R)	
+0x18e
+RLM_AM_CRC_ERROR_STAT
+1	
+grst	
+[0:63](R)
+0x30
+INTR_STS_0
+1	
+interrupt enable and RX fifo overflow interrupt and RX MAC core corruption interrupt
+grst	
+[0:28](RWONE)	
+0x34
+INTR_STS_MASK_0
+1	
+mask interrupt
+grst	
+[0:28](RW)	
+0x38
+INTR_ENABLE_0
+1	
+enable interrupt
+grst	
+[0:28](RW)

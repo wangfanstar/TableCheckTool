@@ -87,8 +87,8 @@
     .tab-inactive:hover { color:#a5b4fc; border-color:rgba(129,140,248,0.4); }  
 
     /* ── 表格 ── */  
-    .table-container { overflow-x:auto; overflow-y:auto; max-height:580px; border-radius:12px; border:1px solid rgba(99,102,241,0.2); content-visibility:auto; contain-intrinsic-size:auto 400px; }  
-    table { border-collapse:separate; border-spacing:0; width:100%; min-width:900px; }  
+    .table-container { overflow-x:auto; overflow-y:auto; max-height:580px; border-radius:12px; border:1px solid rgba(99,102,241,0.2); content-visibility:auto; contain-intrinsic-size:auto 400px; contain:layout style; }
+    table { border-collapse:separate; border-spacing:0; width:100%; min-width:900px; }
     thead { position:sticky; top:0; z-index:20; }  
     thead th {  
       background:linear-gradient(180deg,#1e1b4b,#1a1a3e); color:#a5b4fc;  
@@ -111,8 +111,8 @@
       width:100px; outline:none; letter-spacing:.02em;  
     }  
 
-    tbody tr { transition:background .2s; }  
-    tbody td {  
+    tbody tr { transition:background .2s; }
+    tbody td {
       padding:8px 12px; font-size:13px; border-bottom:1px solid rgba(255,255,255,0.05);  
       color:#cbd5e1; vertical-align:middle; background:rgba(15,23,42,0.5);  
       transition:background .2s; position:relative;  
@@ -139,6 +139,13 @@
     .cell-input:focus { box-shadow:0 0 0 3px rgba(129,140,248,0.3),0 4px 16px rgba(0,0,0,0.5); }  
     .cell-edit-hint { font-size:10px; color:#94a3b8; margin-top:3px; display:flex; gap:8px; }  
     .cell-edit-hint kbd { background:rgba(99,102,241,0.2); border:1px solid rgba(129,140,248,0.3); border-radius:3px; padding:0 4px; font-size:9px; color:#818cf8; }  
+
+    /* 单元格标注：需特别关注，悬停显示提示 */
+    .cell-annotated { background: rgba(168,85,247,0.15) !important; border-left: 3px solid #a855f7 !important; }
+    .cell-annotated:hover { background: rgba(168,85,247,0.22) !important; }
+    tbody tr:nth-child(even) .cell-annotated { background: rgba(168,85,247,0.12) !important; }
+    tbody tr:nth-child(even) .cell-annotated:hover { background: rgba(168,85,247,0.2) !important; }
+    .cell-annotated .cell-annotated-dot { color: #a855f7; font-size: 10px; margin-left: 4px; flex-shrink: 0; cursor: help; }
 
     .badge-confirmed { background:linear-gradient(135deg,#059669,#047857); color:white; font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; box-shadow:0 2px 8px rgba(5,150,105,0.4); white-space:nowrap; }  
     .badge-pending { background:rgba(71,85,105,0.6); color:#94a3b8; font-size:11px; padding:3px 10px; border-radius:20px; font-weight:600; white-space:nowrap; }  
@@ -233,10 +240,31 @@
     <template x-if="ctxMenu.ci!==null">  
       <div>  
         <hr class="ctx-divider"/>  
+        <div class="ctx-item" @click="openAnnotationModal()">📌 <span x-text="getCellAnnotation(ctxMenu.row,ctxMenu.ci)?'编辑标注':'添加标注'"></span></div>  
+        <div class="ctx-item" x-show="getCellAnnotation(ctxMenu.row,ctxMenu.ci)" @click="clearCellAnnotation(); closeCtxMenu();">🗑️ 清除标注</div>  
+        <hr class="ctx-divider"/>  
         <div class="ctx-item danger" @click="ctxDeleteCol()">❌ 删除列「<span x-text="ctxMenu.ci!==null?headers[ctxMenu.ci]:''"></span>」</div>  
       </div>  
     </template>  
   </div>  
+
+  <!-- ══════ 弹窗：单元格标注 ══════ -->
+  <template x-if="showAnnotationModal">
+  <div class="modal-overlay" @click.self="showAnnotationModal=false">
+    <div class="modal-box" style="max-width:480px;">
+      <h3 class="text-lg font-bold text-purple-300 mb-4">📌 单元格标注</h3>
+      <p class="text-slate-400 text-sm mb-3">为当前单元格添加需特别关注的说明，鼠标悬停时将显示此提示内容。</p>
+      <div class="mb-4">
+        <span class="section-label">标注内容</span>
+        <textarea x-model="annotationInput" rows="4" placeholder="例如：需与硬件版本对齐、需二次确认…" class="input-area w-full rounded-lg px-4 py-3 text-sm"></textarea>
+      </div>
+      <div class="flex gap-3 justify-end">
+        <button @click="showAnnotationModal=false" class="px-5 py-2 rounded-lg text-sm font-semibold text-slate-400 hover:text-slate-200 border border-slate-600 hover:border-slate-400 transition-all">取消</button>
+        <button @click="saveCellAnnotation(); showAnnotationModal=false;" class="btn-primary px-5 py-2 rounded-lg text-sm font-semibold text-white">保存标注</button>
+      </div>
+    </div>
+  </div>
+  </template>
 
   <!-- ══════ 弹窗：添加自定义列 ══════ -->  
   <template x-if="showAddColModal">  
@@ -767,7 +795,7 @@
     </template>
 
     <!-- ═══ 有数据时显示（每个表独立一块，新建表追加后新表出现在下方） ═══ -->
-    <div x-show="hasAnyTableData" style="display:none;">  
+    <div x-show="hasAnyTableData" x-cloak>  
 
       <!-- 搜索/过滤（全局共用） -->  
       <div class="glass-card rounded-2xl px-5 py-3 mb-5 flex flex-wrap items-center gap-3">  
@@ -998,7 +1026,9 @@
                     </template>  
                   </td>  
                   <template x-for="(col,ci) in currentTable.headers" :key="'c'+currentTable.id+'_'+row.__id+'_'+ci">  
-                    <td @contextmenu.prevent.stop="openCtxMenuRow($event,row,ci)" @dblclick.stop="startCellEdit(row,ci,activeTableIndex)">  
+                    <td @contextmenu.prevent.stop="openCtxMenuRow($event,row,ci)" @dblclick.stop="startCellEdit(row,ci,activeTableIndex)"  
+                        :class="getCellAnnotation(row,ci) ? 'cell-annotated' : ''"  
+                        :title="getCellAnnotation(row,ci) || null">  
                       <template x-if="editingCell.tableIndex===activeTableIndex && editingCell.rowId===row.__id && editingCell.ci===ci">  
                         <div>  
                           <textarea class="cell-input" rows="2"  
@@ -1013,6 +1043,7 @@
                       <template x-if="!(editingCell.tableIndex===activeTableIndex && editingCell.rowId===row.__id && editingCell.ci===ci)">  
                         <div class="cell-view">  
                           <span class="cell-text text-xs leading-relaxed" x-text="getCellValueForTable(row,ci,currentTable)"></span>  
+                          <span x-show="getCellAnnotation(row,ci)" class="cell-annotated-dot" :title="getCellAnnotation(row,ci)">📌</span>  
                           <span class="cell-edit-icon" @click.stop="startCellEdit(row,ci,activeTableIndex)">✏️</span>  
                         </div>  
                       </template>  
@@ -1095,8 +1126,9 @@ function tableApp() {
     _pendingParseIsAppend: false,  
 
     /* ── 多表：每个表独立表头与统计 ── */  
-    tables: [ { id: 1, name: '表1', headers: [], customColIndices: [], schemas: [], rows: [], idCounter: 0, editHistory: [] } ],  
-    activeTableIndex: 0,  
+    tables: [ { id: 1, name: '表1', headers: [], customColIndices: [], schemas: [], rows: [], idCounter: 0, editHistory: [], _filterVersion: 0, cellAnnotations: {} } ],
+    activeTableIndex: 0,
+    _filteredRowsCache: { key: '', list: [] },
     _nextTableId: 2,
     exportReportTitle: '表格内容确认报告（全部）',
     exportRemark: '',
@@ -1129,6 +1161,7 @@ function tableApp() {
     exportSchemaFilter: [],  
     showDelColModal: false, delColTarget: { ci:-1, name:'', isCustom:false },  
     showEditRowModal: false, editRowTarget: null, editRowData: {},  
+    showAnnotationModal: false, annotationInput: '', _annotationTarget: { row: null, ci: null },  
 
     /* ── 追加 ── */  
     showAppendModal: false,  
@@ -1254,24 +1287,28 @@ function tableApp() {
     get allTablesTotalRows() { return this.tables.reduce((n,t)=>n+(t.rows?t.rows.length:0),0); },  
     get allTablesConfirmedCount() { return this.tables.reduce((n,t)=>n+this.getTableConfirmedCount(t),0); },  
     get allTablesProgressPct() { const total=this.allTablesTotalRows; return total?Math.round(this.allTablesConfirmedCount/total*100):0; },  
-    getFilteredRowsForTable(t) {  
-      if (!t||!t.rows) return [];  
-      let list = t.rows;  
-      if (this.filterMode==='confirmed') list=list.filter(r=>r.__confirmed);  
-      else if (this.filterMode==='pending') list=list.filter(r=>!r.__confirmed);  
-      else if (this.filterMode==='appended') list=list.filter(r=>r.__appended);  
-      else if (this.filterMode.startsWith('schema_')) {  
-        const si=parseInt(this.filterMode.split('_')[1]);  
-        list=list.filter(r=>r.__schemaIdx===si);  
-      }  
-      const q=(this.searchTextFilter||'').trim().toLowerCase();  
-      if (q) list=list.filter(r=>{  
-        const inData=(r.__data||[]).some(v=>(v||'').toLowerCase().includes(q));  
-        const inCustom=Object.values(r.__custom||{}).some(v=>(v||'').toLowerCase().includes(q));  
-        return inData||inCustom;  
-      });  
-      return list;  
-    },  
+    _bumpFilterVersion(t) { if (t) t._filterVersion = (t._filterVersion || 0) + 1; },
+    getFilteredRowsForTable(t) {
+      if (!t||!t.rows) return [];
+      const key = `${t.id}_${t._filterVersion ?? 0}_${this.filterMode}_${this.searchTextFilter}`;
+      if (this._filteredRowsCache.key === key) return this._filteredRowsCache.list;
+      let list = t.rows;
+      if (this.filterMode==='confirmed') list=list.filter(r=>r.__confirmed);
+      else if (this.filterMode==='pending') list=list.filter(r=>!r.__confirmed);
+      else if (this.filterMode==='appended') list=list.filter(r=>r.__appended);
+      else if (this.filterMode.startsWith('schema_')) {
+        const si=parseInt(this.filterMode.split('_')[1]);
+        list=list.filter(r=>r.__schemaIdx===si);
+      }
+      const q=(this.searchTextFilter||'').trim().toLowerCase();
+      if (q) list=list.filter(r=>{
+        const inData=(r.__data||[]).some(v=>(v||'').toLowerCase().includes(q));
+        const inCustom=Object.values(r.__custom||{}).some(v=>(v||'').toLowerCase().includes(q));
+        return inData||inCustom;
+      });
+      this._filteredRowsCache = { key, list };
+      return list;
+    },
     getCellValueForTable(row, ci, t) {  
       if (!t) return '';  
       const colName = (t.headers||[])[ci];  
@@ -1289,9 +1326,47 @@ function tableApp() {
       if (!t||!t.rows||!t.rows.length) return 0;  
       return Math.round(this.getSchemaRowCountForTable(si,t)/t.rows.length*100);  
     },  
-    get currentFilteredRows() { return this.getFilteredRowsForTable(this.currentTable); },  
+    get currentFilteredRows() { return this.getFilteredRowsForTable(this.currentTable); },
 
-    /* ════════════════════ 工具函数 ════════════════════ */  
+    /* ════════════════════ 单元格标注 ════════════════════ */
+    getCellAnnotation(row, ci) {
+      if (!this.currentTable || !row || ci == null) return '';
+      const map = this.currentTable.cellAnnotations || {};
+      const key = row.__id + '_' + ci;
+      return (map[key] && String(map[key]).trim()) ? String(map[key]).trim() : '';
+    },
+    _ensureCellAnnotations() {
+      if (!this.currentTable) return;
+      if (typeof this.currentTable.cellAnnotations !== 'object') this.currentTable.cellAnnotations = {};
+    },
+    setCellAnnotation(row, ci, text) {
+      this._ensureCellAnnotations();
+      const key = row.__id + '_' + ci;
+      const t = (text || '').trim();
+      if (t) this.currentTable.cellAnnotations[key] = t;
+      else delete this.currentTable.cellAnnotations[key];
+    },
+    openAnnotationModal() {
+      if (!this.ctxMenu.row || this.ctxMenu.ci === null) return;
+      this._annotationTarget = { row: this.ctxMenu.row, ci: this.ctxMenu.ci };
+      this.annotationInput = this.getCellAnnotation(this.ctxMenu.row, this.ctxMenu.ci);
+      this.showAnnotationModal = true;
+      this.closeCtxMenu();
+    },
+    saveCellAnnotation() {
+      const t = this._annotationTarget;
+      if (!t || !t.row || t.ci === null) return;
+      this.setCellAnnotation(t.row, t.ci, this.annotationInput);
+      this._annotationTarget = { row: null, ci: null };
+      this.showToast(this.annotationInput ? '📌 已保存标注' : '已清除标注', 'info');
+    },
+    clearCellAnnotation() {
+      if (!this.ctxMenu.row || this.ctxMenu.ci === null) return;
+      this.setCellAnnotation(this.ctxMenu.row, this.ctxMenu.ci, '');
+      this.showToast('已清除标注', 'info');
+    },
+
+    /* ════════════════════ 工具函数 ════════════════════ */
 
     _cleanLine(line) {  
       // 去除行尾tab和空白，但保留行内内容  
@@ -1481,6 +1556,7 @@ function tableApp() {
           this.currentTable.rows = []; this.currentTable.idCounter = 0;  
           this.currentTable.headers = []; this.currentTable.customColIndices = [];  
           this.currentTable.schemas = [{ name: schemaName, headers: heads }];  
+          this.currentTable.cellAnnotations = {};
           schemaIdx = 0;  
           this._rebuildHeaders();  
           this.currentTable.editHistory = [];  
@@ -1490,15 +1566,16 @@ function tableApp() {
       }  
 
       let added = 0;  
-      records.forEach(cells => {  
-        const row = this._makeRow(cells, schemaIdx, this._pendingParseIsAppend);  
-        row.__displayIndex = this.rows.length + 1;  
-        if (this.currentTable) this.currentTable.rows.push(row);  
-        added++;  
-      });  
-      this._reindex();  
-      this.showColCountModal = false;  
-      this._addHistory('cell', `导入${added}条记录，格式「${schemaName}」`);  
+      records.forEach(cells => {
+        const row = this._makeRow(cells, schemaIdx, this._pendingParseIsAppend);
+        row.__displayIndex = this.rows.length + 1;
+        if (this.currentTable) this.currentTable.rows.push(row);
+        added++;
+      });
+      this._reindex();
+      this._bumpFilterVersion(this.currentTable);
+      this.showColCountModal = false;
+      this._addHistory('cell', `导入${added}条记录，格式「${schemaName}」`);
       this.showToast(`🚀 解析完成：${added}条 × ${colCount}列【${schemaName}】`, 'success');  
     },  
 
@@ -1521,6 +1598,7 @@ function tableApp() {
       if (this.currentTable) {
         this.currentTable.rows=[]; this.currentTable.idCounter=0; this.currentTable.headers=[]; this.currentTable.customColIndices=[];  
         this.currentTable.schemas=[{name:schemaName,headers:heads}];  
+        this.currentTable.cellAnnotations={};
       }
       this._rebuildHeaders();  
       if (this.currentTable) this.currentTable.editHistory=[];  
@@ -1533,33 +1611,35 @@ function tableApp() {
         added++;  
       });  
       this._reindex();  
+      this._bumpFilterVersion(this.currentTable);
       this.showToast(`📊 解析完成：${added}条 × ${heads.length}列`, 'success');  
     },  
 
     /* ════════════════════ 行操作 ════════════════════ */  
 
-    confirmRow(row) { row.__confirmed=true; this.showToast('✅ 已确认 #'+row.__displayIndex,'success'); },  
-    revokeRow(row) { row.__confirmed=false; this.showToast('↩️ 已撤销 #'+row.__displayIndex,'warning'); },  
+    confirmRow(row) { row.__confirmed=true; this._bumpFilterVersion(this.currentTable); this.showToast('✅ 已确认 #'+row.__displayIndex,'success'); },
+    revokeRow(row) { row.__confirmed=false; this._bumpFilterVersion(this.currentTable); this.showToast('↩️ 已撤销 #'+row.__displayIndex,'warning'); },
     confirmAll() {  
       const t=this.filteredRows.filter(r=>!r.__confirmed);  
       t.forEach(r=>{r.__confirmed=true;});  
       this.showToast(`✅ 已确认 ${t.length} 条`,'success');  
     },  
-    cancelAllConfirm() {  
-      const t=this.filteredRows.filter(r=>r.__confirmed);  
-      t.forEach(r=>{r.__confirmed=false;});  
-      this.showToast(`↩️ 已取消 ${t.length} 条`,'warning');  
-    },  
-    deleteRow(row) {  
-      if (!confirm(`确定删除第 ${row.__displayIndex} 行？`)) return;  
-      const idx=this.rows.findIndex(r=>r.__id===row.__id);  
-      if (idx===-1) return;  
-      const desc=`删除行#${row.__displayIndex}`;  
-      if (this.currentTable) this.currentTable.rows.splice(idx,1);  
-      this._reindex();  
-      this._addHistory('row-del',desc);  
-      this.showToast('🗑️ 已删除行','warning');  
-    },  
+    cancelAllConfirm() {
+      const t=this.filteredRows.filter(r=>r.__confirmed);
+      t.forEach(r=>{r.__confirmed=false;});
+      this._bumpFilterVersion(this.currentTable);
+      this.showToast(`↩️ 已取消 ${t.length} 条`,'warning');
+    },
+    deleteRow(row) {
+      if (!confirm(`确定删除第 ${row.__displayIndex} 行？`)) return;
+      const idx=this.rows.findIndex(r=>r.__id===row.__id);
+      if (idx===-1) return;
+      const desc=`删除行#${row.__displayIndex}`;
+      if (this.currentTable) { this.currentTable.rows.splice(idx,1); this._bumpFilterVersion(this.currentTable); }
+      this._reindex();
+      this._addHistory('row-del',desc);
+      this.showToast('🗑️ 已删除行','warning');
+    },
     duplicateRow(row) {  
       const idx=this.rows.findIndex(r=>r.__id===row.__id);  
       if (idx===-1) return;  
@@ -1569,10 +1649,10 @@ function tableApp() {
         __schemaIdx:row.__schemaIdx,  
         __confirmed:false, __appended:false, __isNew:true,  
       };  
-      if (this.currentTable) this.currentTable.rows.splice(idx+1,0,nr);  
-      this._reindex();  
-      setTimeout(()=>{nr.__isNew=false;},2100);  
-      this._addHistory('cell',`复制行#${row.__displayIndex}`);  
+      if (this.currentTable) { this.currentTable.rows.splice(idx+1,0,nr); this._bumpFilterVersion(this.currentTable); }
+      this._reindex();
+      setTimeout(()=>{nr.__isNew=false;},2100);
+      this._addHistory('cell',`复制行#${row.__displayIndex}`);
       this.showToast('📋 已复制行','success');  
     },  
     _reindex() { this.rows.forEach((r,i)=>{r.__displayIndex=i+1;}); },  
@@ -1592,6 +1672,7 @@ function tableApp() {
       const old = this.getCellValue(row, ci);
       if (val !== old) {
         this.setCellValue(row, ci, val);
+        this._bumpFilterVersion(this.currentTable);
         this._addHistory(
           'cell',
           `行#${row.__displayIndex}「${this.headers[ci]}」: `
@@ -1685,6 +1766,7 @@ function tableApp() {
           }
         });
       }
+      this._bumpFilterVersion(this.currentTable);
       this._addHistory('col-del', `删除列「${name}」`);
       this.showDelColModal = false;
       this.showToast(`🗑️ 已删除列「${name}」`, 'warning');
@@ -1716,6 +1798,7 @@ function tableApp() {
         }
       });
       if (changes > 0) {
+        this._bumpFilterVersion(this.currentTable);
         this._addHistory('cell', `编辑行#${row.__displayIndex}（${changes}项变更）`);
         this.showToast(`💾 行#${row.__displayIndex} 已保存（${changes}处修改）`, 'success');
       }
@@ -1862,6 +1945,8 @@ function tableApp() {
           rows: [],
           idCounter: 0,
           editHistory: [],
+          _filterVersion: 0,
+          cellAnnotations: {},
         };
         let rid = 0;
         records.forEach(cells => {
@@ -1895,6 +1980,7 @@ function tableApp() {
       });
       const added = this.rows.length - startLen;
       this._reindex();
+      this._bumpFilterVersion(this.currentTable);
       setTimeout(() => { this.rows.forEach(r => { r.__isNew = false; }); }, 2100);
 
       const sName = this.schemas[schemaIdx].name;
@@ -2016,6 +2102,12 @@ function tableApp() {
         exportHeaders.map(h => `<th>${esc(h)}</th>`).join('') +
         '<th>状态</th>';
 
+      const getExportAnn = (row, ci) => {
+        const map = this.currentTable?.cellAnnotations || {};
+        const t = (map[row.__id + '_' + ci] && String(map[row.__id + '_' + ci]).trim()) ? String(map[row.__id + '_' + ci]).trim() : '';
+        return t;
+      };
+
       const tbodyHtml = exportRows.map((row, i) => {
         const schema = this.schemas[row.__schemaIdx];
         const schemaColor = this.getSchemaColor(row.__schemaIdx);
@@ -2028,7 +2120,11 @@ function tableApp() {
           : '<span style="background:rgba(71,85,105,0.6);color:#cbd5e1;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">待确认</span>';
         const cells = exportHeaders.map((h, hi) => {
           const ci = this.headers.indexOf(h);
-          return `<td>${esc(this.getCellValue(row, ci))}</td>`;
+          const cellVal = this.getCellValue(row, ci);
+          const ann = getExportAnn(row, ci);
+          const tdClass = ann ? ' class="cell-annotated"' : '';
+          const tdTitle = ann ? ' title="' + esc(ann) + '"' : '';
+          return `<td${tdClass}${tdTitle}>${esc(cellVal)}</td>`;
         }).join('');
         const rs = row.__confirmed
           ? 'style="background:rgba(5,150,105,0.08);border-left:3px solid #059669;"'
@@ -2096,6 +2192,9 @@ tbody td{padding:10px 12px;font-size:14px;line-height:1.5;border-bottom:1px soli
   background:rgba(15,23,42,0.5);vertical-align:middle}
 tbody tr:nth-child(even) td{background:rgba(30,41,59,0.5)}
 tbody tr:hover td{background:rgba(99,102,241,0.08)!important}
+td.cell-annotated{background:rgba(168,85,247,0.15)!important;border-left:3px solid #a855f7}
+tbody tr:nth-child(even) td.cell-annotated{background:rgba(168,85,247,0.12)!important}
+td.cell-annotated:hover{background:rgba(168,85,247,0.22)!important}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:#1e293b}
 ::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
@@ -2174,6 +2273,9 @@ tbody td{padding:10px 12px;font-size:14px;line-height:1.5;border-bottom:1px soli
   background:rgba(15,23,42,0.5);vertical-align:middle}
 tbody tr:nth-child(even) td{background:rgba(30,41,59,0.5)}
 tbody tr:hover td{background:rgba(99,102,241,0.08)!important}
+td.cell-annotated{background:rgba(168,85,247,0.15)!important;border-left:3px solid #a855f7}
+tbody tr:nth-child(even) td.cell-annotated{background:rgba(168,85,247,0.12)!important}
+td.cell-annotated:hover{background:rgba(168,85,247,0.22)!important}
 ::-webkit-scrollbar{width:6px;height:6px}
 ::-webkit-scrollbar-track{background:#1e293b}
 ::-webkit-scrollbar-thumb{background:#475569;border-radius:3px}
@@ -2187,6 +2289,11 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
         const thHtml = '<th>#</th><th>格式</th>' +
           exportHeaders.map(h => `<th>${esc(h)}</th>`).join('') +
           '<th>状态</th>';
+        const annMap = (t.cellAnnotations && typeof t.cellAnnotations === 'object') ? t.cellAnnotations : {};
+        const getExportAnn = (row, ci) => {
+          const v = annMap[row.__id + '_' + ci];
+          return (v && String(v).trim()) ? String(v).trim() : '';
+        };
         const tbodyHtml = exportRows.map((row, i) => {
           const schema = (t.schemas || [])[row.__schemaIdx];
           const schemaColor = this.getSchemaColor(row.__schemaIdx);
@@ -2199,7 +2306,10 @@ footer{margin-top:32px;text-align:center;font-size:12px;color:#94a3b8}
             : '<span style="background:rgba(71,85,105,0.6);color:#cbd5e1;padding:2px 8px;border-radius:12px;font-size:11px;font-weight:700;">待确认</span>';
           const cells = exportHeaders.map((h, hi) => {
             const cellVal = this.getCellValueForTable(row, hi, t);
-            return `<td>${esc(cellVal)}</td>`;
+            const ann = getExportAnn(row, hi);
+            const tdClass = ann ? ' class="cell-annotated"' : '';
+            const tdTitle = ann ? ' title="' + esc(ann) + '"' : '';
+            return `<td${tdClass}${tdTitle}>${esc(cellVal)}</td>`;
           }).join('');
           const rs = row.__confirmed
             ? 'style="background:rgba(5,150,105,0.08);border-left:3px solid #059669;"'
@@ -2377,6 +2487,7 @@ grst
         })),
         idCounter: this.idCounter,
         editHistory: (this.editHistory || []).slice(-100),
+        cellAnnotations: typeof this.currentTable?.cellAnnotations === 'object' ? { ...this.currentTable.cellAnnotations } : {},
       };
       const blob = new Blob([JSON.stringify(snapshot, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
@@ -2418,6 +2529,7 @@ grst
           })),
           idCounter: t.idCounter != null ? t.idCounter : 0,
           editHistory: ((t.editHistory || []).slice(-100)),
+          cellAnnotations: typeof t.cellAnnotations === 'object' ? { ...t.cellAnnotations } : {},
         })),
         _nextTableId: this._nextTableId,
       };
@@ -2508,6 +2620,8 @@ grst
                 rows,
                 idCounter,
                 editHistory: Array.isArray(t.editHistory) ? t.editHistory : [],
+                _filterVersion: 0,
+                cellAnnotations: (t.cellAnnotations && typeof t.cellAnnotations === 'object') ? { ...t.cellAnnotations } : {},
               };
             });
             this.tables = tables;
@@ -2524,15 +2638,17 @@ grst
             this.editingHeaderTableIndex = -1;
             this.showEditRowModal = false;
             this.editRowTarget = null;
+            this._filteredRowsCache = { key: '', list: [] };
             const totalRows = tables.reduce((sum, t) => sum + (t.rows || []).length, 0);
             this.showToast(`📂 已导入历史数据：${tables.length} 个表，共 ${totalRows} 条`, 'success');
+            if (typeof this.$nextTick === 'function') this.$nextTick(() => {});
             return;
           }
 
           if (data.version !== 1 || !Array.isArray(data.headers) || !Array.isArray(data.rows) || !Array.isArray(data.schemas)) {
             throw new Error('不支持的格式或缺少必要字段（version 1: headers/rows/schemas；version 2: tables）');
           }
-          if (!this.tables.length) { this.tables = [{ id: this._nextTableId++, name: '表1', headers: [], customColIndices: [], schemas: [], rows: [], idCounter: 0, editHistory: [] }]; this.activeTableIndex = 0; }
+          if (!this.tables.length) { this.tables = [{ id: this._nextTableId++, name: '表1', headers: [], customColIndices: [], schemas: [], rows: [], idCounter: 0, editHistory: [], _filterVersion: 0, cellAnnotations: {} }]; this.activeTableIndex = 0; }
           const cur = this.currentTable;
           if (!cur) return;
           this._saveUndoSnapshot();
@@ -2544,6 +2660,8 @@ grst
           const maxId = cur.rows.length ? Math.max(...cur.rows.map(r => r.__id)) : 0;
           cur.idCounter = typeof data.idCounter === 'number' ? Math.max(data.idCounter, maxId) : maxId;
           cur.editHistory = Array.isArray(data.editHistory) ? data.editHistory : [];
+          cur._filterVersion = 0;
+          cur.cellAnnotations = (data.cellAnnotations && typeof data.cellAnnotations === 'object') ? { ...data.cellAnnotations } : {};
           if (typeof data.reportTitle === 'string') this.exportReportTitle = data.reportTitle;
           if (typeof data.reportRemark === 'string') this.exportRemark = data.reportRemark;
           this._applyImportedCommonTables(data);
@@ -2555,7 +2673,9 @@ grst
           this.editingHeaderTableIndex = -1;
           this.showEditRowModal = false;
           this.editRowTarget = null;
+          this._filteredRowsCache = { key: '', list: [] };
           this.showToast(`📂 已导入历史数据：${this.rows.length} 条，可继续编辑`, 'success');
+          if (typeof this.$nextTick === 'function') this.$nextTick(() => {});
         } catch (e) {
           this.showToast('导入失败：' + (e.message || '文件格式错误'), 'error');
         }
@@ -2761,6 +2881,8 @@ grst
       t.rows = [];
       t.idCounter = 0;
       t.editHistory = [];
+      t.cellAnnotations = {};
+      this._bumpFilterVersion(t);
       this.showToast('🗑️ 已清空「'+t.name+'」数据，表头已保留可继续追加', 'warning');
     },
     removeTableByIndex(ti) {
@@ -2791,7 +2913,8 @@ grst
       if (this.currentTable) {
         this.currentTable.headers = []; this.currentTable.customColIndices = [];
         this.currentTable.schemas = []; this.currentTable.rows = []; this.currentTable.idCounter = 0;
-        this.currentTable.editHistory = [];
+        this.currentTable.editHistory = []; this.currentTable.cellAnnotations = {};
+        this._bumpFilterVersion(this.currentTable);
       }
       this.searchText = ''; this.searchTextFilter = ''; this.filterMode = 'all';
       this.editingCell = { rowId: null, ci: null };
@@ -2813,7 +2936,8 @@ grst
       this.searchTextFilter = this.searchText;
       this.$watch('searchText', value => {
         clearTimeout(this._searchDebounceTimer);
-        this._searchDebounceTimer = setTimeout(() => { this.searchTextFilter = value; }, 280);
+        if (value === '') { this.searchTextFilter = ''; return; }
+        this._searchDebounceTimer = setTimeout(() => { this.searchTextFilter = value; }, 200);
       });
     },
 
